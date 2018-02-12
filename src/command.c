@@ -22,15 +22,14 @@ static uint16_t g_CommandBufIndex = 0;
 // 有効コマンド受信回数
 static uint32_t g_CommandRecvCount = 0;
 
+// 1コマンド受信完了フラグ
+static BOOL g_IsCommandReceived = FALSE;
+
 /************************************************************
  *  prototype
  ************************************************************/
 /**
  * コマンド受信処理
- *
- * シリアル受信割り込みで、1コマンド受信が確定した段階で呼び出される。
- * 割り込みコンテキスト上で呼び出されるので処理時間に注意すること。
- * (タイマ割り込み周期が遅れない程度ならOK)
  */
 static void Command_onReceive(const uint8_t *command);
 
@@ -46,25 +45,21 @@ static uint8_t atoh(uint8_t c_h, uint8_t c_l);
 void Command_init(void)
 {
 	g_CommandBufIndex = 0;
+    R_UART2_Start();
 	R_UART2_Receive(&g_CommandBuf[g_CommandBufIndex], 1);
 }
 
-void Command_receivedHandler(void)
+void Command_proc(void)
 {
-	// 受信文字は自動生成コード側でバッファに格納済み
-	if (g_CommandBuf[g_CommandBufIndex] == '\n') {
+	if (g_IsCommandReceived == TRUE) {
+		g_IsCommandReceived = FALSE;
 		Command_onReceive(g_CommandBuf);
 		g_CommandBufIndex = 0;
 		memset(g_CommandBuf, 0, COMMAND_BUF_SIZE);
-	} else {
-		g_CommandBufIndex++;
+		R_UART2_Receive(&g_CommandBuf[g_CommandBufIndex], 1);
 	}
-	R_UART2_Receive(&g_CommandBuf[g_CommandBufIndex], 1);
 }
 
-/************************************************************
- *  prvaite functions
- ************************************************************/
 static void Command_onReceive(const uint8_t *command)
 {
 	int i;
@@ -85,7 +80,7 @@ static void Command_onReceive(const uint8_t *command)
 				 ((uint8_t)P4_bit.no2  << 1) |
 				 ((uint8_t)P4_bit.no1  << 0));
 		dipsw = ~dipsw & 0x0F;
-		printf("Get Mode 0x%02x\n", dipsw);
+		PRINTF("Get Mode 0x%02x\n", dipsw);
 		break;
 		
 	case ARMOR_CMD_SET_DISPLAY:
@@ -126,12 +121,31 @@ static void Command_onReceive(const uint8_t *command)
 		printf("%d\n", g_CommandRecvCount);
 		break;
 		
+	case 9:
+		// CSI10: 送信機能
+		//R_CSI10_Send();
+		break;
+		
 	default:
 		printf("Bad Type.\n");
 		break;
 	}
 }
 
+void Command_receivedHandler(void)
+{
+	// 受信文字は自動生成コード側でバッファに格納済み
+	if (g_CommandBuf[g_CommandBufIndex] == '\n') {
+		g_IsCommandReceived = TRUE;
+	} else {
+		g_CommandBufIndex++;
+	}
+	R_UART2_Receive(&g_CommandBuf[g_CommandBufIndex], 1);
+}
+
+/************************************************************
+ *  prvaite functions
+ ************************************************************/
 static uint8_t atoh(uint8_t c_h, uint8_t c_l)
 {
 	uint8_t h, l;

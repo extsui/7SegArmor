@@ -14,6 +14,14 @@
 void Command_init(void);
 
 /**
+ * コマンド処理
+ *
+ * コマンド受信が完了していた場合にコマンド処理を行う。
+ * 本関数はメインループで定期的にポーリングすること。
+ */
+void Command_proc(void);
+
+/**
  * 1バイト受信ハンドラ
  */
 void Command_receivedHandler(void);

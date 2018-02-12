@@ -221,6 +221,13 @@
       <TreeImageGuid>941832c1-fc3b-4e1b-94e8-01ea17128b42</TreeImageGuid>
       <ParentItem>ca2f293c-b0a8-47c1-ba09-2a13fbe4bd0d</ParentItem>
     </Instance>
+    <Instance Guid="77472a4d-d01c-4093-a196-39e965fe75fa">
+      <Name>armor.c</Name>
+      <Type>File</Type>
+      <RelativePath>src\armor.c</RelativePath>
+      <TreeImageGuid>941832c1-fc3b-4e1b-94e8-01ea17128b42</TreeImageGuid>
+      <ParentItem>ca2f293c-b0a8-47c1-ba09-2a13fbe4bd0d</ParentItem>
+    </Instance>
     <Instance Guid="9758bd78-c568-4f89-984b-e0c502cd1b4e">
       <Name>command.h</Name>
       <Type>File</Type>
@@ -232,6 +239,13 @@
       <Name>finger.h</Name>
       <Type>File</Type>
       <RelativePath>include\finger.h</RelativePath>
+      <TreeImageGuid>03cad1e8-2eb3-4cde-a8a3-982423631122</TreeImageGuid>
+      <ParentItem>b7bfb2be-faab-4594-9e91-7a368a1a378a</ParentItem>
+    </Instance>
+    <Instance Guid="e3f95c58-1042-424a-8f38-6f7464412d02">
+      <Name>armor.h</Name>
+      <Type>File</Type>
+      <RelativePath>include\armor.h</RelativePath>
       <TreeImageGuid>03cad1e8-2eb3-4cde-a8a3-982423631122</TreeImageGuid>
       <ParentItem>b7bfb2be-faab-4594-9e91-7a368a1a378a</ParentItem>
     </Instance>
@@ -316,7 +330,9 @@
       <SourceItemType16>CSource</SourceItemType16>
       <SourceItemGuid17>5680a144-5d0e-4297-b224-ca6658876bd3</SourceItemGuid17>
       <SourceItemType17>CSource</SourceItemType17>
-      <SourceItemCount>18</SourceItemCount>
+      <SourceItemGuid18>77472a4d-d01c-4093-a196-39e965fe75fa</SourceItemGuid18>
+      <SourceItemType18>CSource</SourceItemType18>
+      <SourceItemCount>19</SourceItemCount>
       <LastDeviceChangedCounter>0</LastDeviceChangedCounter>
     </Instance>
     <Instance Guid="6bb7060d-7e24-4135-bd9b-7db166417523">
@@ -1035,6 +1051,14 @@ include
       <ItemAddTime>636538985964060234</ItemAddTime>
       <ItemAddTimeCount>2</ItemAddTimeCount>
     </Instance>
+    <Instance Guid="77472a4d-d01c-4093-a196-39e965fe75fa">
+      <ItemAddTime>636540727436910180</ItemAddTime>
+      <ItemAddTimeCount>0</ItemAddTimeCount>
+    </Instance>
+    <Instance Guid="e3f95c58-1042-424a-8f38-6f7464412d02">
+      <ItemAddTime>636540727480882695</ItemAddTime>
+      <ItemAddTimeCount>0</ItemAddTimeCount>
+    </Instance>
     <Instance Guid="0b7e78c3-aadd-45ee-9f9d-ffac6141eeb2">
       <TimeTagModified-SourceItem0--0>-8586834332733983302</TimeTagModified-SourceItem0--0>
       <SourceItem0-IsLockedByUser>False</SourceItem0-IsLockedByUser>
@@ -1110,6 +1134,10 @@ include
       <SourceItem17-IsLockedByUser>False</SourceItem17-IsLockedByUser>
       <SourceItem17-BuildingTarget-0>True</SourceItem17-BuildingTarget-0>
       <SourceItem17-IndividualCompileOption-0>False</SourceItem17-IndividualCompileOption-0>
+      <TimeTagModified-SourceItem18--0>-8586831633417865628</TimeTagModified-SourceItem18--0>
+      <SourceItem18-IsLockedByUser>False</SourceItem18-IsLockedByUser>
+      <SourceItem18-BuildingTarget-0>True</SourceItem18-BuildingTarget-0>
+      <SourceItem18-IndividualCompileOption-0>False</SourceItem18-IndividualCompileOption-0>
     </Instance>
   </Class>
   <Class Guid="44fa27c9-0aa0-4297-bd3b-2c5c5bdb8881">
@@ -4888,7 +4916,6 @@ include
     &lt;/FUNC&gt;
     &lt;TAG&gt;
       &lt;GlobleUserTag&gt;
-        &lt;cg_security4 Name="cg_security4" Value="00" /&gt;
         &lt;cg_security9 Name="cg_security9" Value="00" /&gt;
         &lt;cg_security7 Name="cg_security7" Value="00" /&gt;
         &lt;cg_security5 Name="cg_security5" Value="00" /&gt;
@@ -4898,13 +4925,14 @@ include
         &lt;cg_security1 Name="cg_security1" Value="00" /&gt;
         &lt;clock_option Name="clock_option" Value="E8" /&gt;
         &lt;lvi_option Name="lvi_option" Value="33" /&gt;
+        &lt;cg_security2 Name="cg_security2" Value="00" /&gt;
         &lt;pior_value Name="pior_value" Value="00" /&gt;
         &lt;cg_option Name="cg_option" Value="84" /&gt;
         &lt;cg_security8 Name="cg_security8" Value="00" /&gt;
         &lt;cg_security6 Name="cg_security6" Value="00" /&gt;
         &lt;ocdstart Name="ocdstart" Value="0FE00" /&gt;
         &lt;cg_onchip Name="cg_onchip" Value="" /&gt;
-        &lt;cg_security2 Name="cg_security2" Value="00" /&gt;
+        &lt;cg_security4 Name="cg_security4" Value="00" /&gt;
         &lt;cg_iawctl_value Name="cg_iawctl_value" Value="80" /&gt;
         &lt;cg_ocd_ram_size Name="cg_ocd_ram_size" Value="512" /&gt;
         &lt;wdt_option Name="wdt_option" Value="FD" /&gt;
@@ -4921,7 +4949,7 @@ include
     &lt;/PORT&gt;
     &lt;INTC SetFlag="True" HelpID="int" NeedRefresh="False"&gt;
       &lt;INTP Accelerate="No" MacroName="INTP" SetFlag="True" TabEnable="True" /&gt;
-      &lt;KEY Chip="RL78G13_40pin,RL78G13_44pin,RL78G13_48pin,RL78G13_52pin,RL78G13_64pin,RL78G13_80pin,RL78G13_100pin,RL78G13_128pin," Accelerate="No" MacroName="KEY" TabEnable="True" SetFlag="False" /&gt;
+      &lt;KEY Chip="RL78G13_40pin,RL78G13_44pin,RL78G13_48pin,RL78G13_52pin,RL78G13_64pin,RL78G13_80pin,RL78G13_100pin,RL78G13_128pin," Accelerate="No" MacroName="KEY" SetFlag="False" TabEnable="True" /&gt;
     &lt;/INTC&gt;
     &lt;Serial SetFlag="True" HelpID="serial" NeedRefresh="False"&gt;
       &lt;SAU0 Accelerate="No" MacroName="SAU" Channel="0" SetFlag="True" TabEnable="True"&gt;

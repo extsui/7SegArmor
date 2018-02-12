@@ -39,9 +39,9 @@ Includes
 /* Start user code for include. Do not edit comment generated here */
 #include "iodefine.h"
 #include <stdio.h>
-#include <string.h>
 #include "command.h"
 #include "finger.h"
+#include "armor.h"
 /* End user code. Do not edit comment generated here */
 #include "r_cg_userdefine.h"
 
@@ -69,16 +69,9 @@ void main(void)
     R_MAIN_UserInit();
     /* Start user code. Do not edit comment generated here */
 	printf("7SegArmor started.\n");
-    while (1U) {
-		volatile uint32_t t;
-		
-		P3_bit.no0 ^= 1;
-		for (t = 0; t < 1000000; t++) {
-			NOP();
-		}
-		Finger_update();
-        R_WDT_Restart();
-    }
+	Armor_mainLoop();
+	printf("7SegArmor exit.\n");
+	while (1U);
     /* End user code. Do not edit comment generated here */
 }
 
@@ -91,13 +84,10 @@ void main(void)
 void R_MAIN_UserInit(void)
 {
     /* Start user code. Do not edit comment generated here */
-    R_UART2_Start();
-	R_CSI00_Start();
-	R_INTC10_Start();
-	
 	Command_init();
 	Finger_init();
-    EI();
+	Armor_init();
+	EI();
     /* End user code. Do not edit comment generated here */
 }
 

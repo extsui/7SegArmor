@@ -41,5 +41,7 @@ typedef enum {
 
 #define ARRAY_SIZE(x)	(sizeof(x)/sizeof(x[0]))
 
+#define PRINTF(...)  printf(__VA_ARGS__)
+
 /* End user code. Do not edit comment generated here */
 #endif

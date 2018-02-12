@@ -61,6 +61,8 @@ void Frame_update(void);
  ************************************************************/
 void Finger_init(void)
 {
+	R_CSI00_Start();
+	
 	// 表示データ設定
 	Finger_setDisplayAll(g_StartupDisplay);
 	

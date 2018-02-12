@@ -32,6 +32,7 @@ Includes
 #include "r_cg_macrodriver.h"
 #include "r_cg_intc.h"
 /* Start user code for include. Do not edit comment generated here */
+#include "armor.h"
 /* End user code. Do not edit comment generated here */
 #include "r_cg_userdefine.h"
 
@@ -57,6 +58,7 @@ Global variables and functions
 static void __near r_intc10_interrupt(void)
 {
     /* Start user code. Do not edit comment generated here */
+	Armor_latchHandler();
     /* End user code. Do not edit comment generated here */
 }
 
