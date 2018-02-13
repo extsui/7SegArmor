@@ -19,8 +19,17 @@
 /** システムカウンタ(1msカウントアップ) */
 static uint32_t g_SysTick = 0;
 
+/** 1ms処理回数(デバッグ用。システムカウンタとの差が1ms周期に間に合わなかった回数) */
+static uint32_t g_1msCyclicProcCount = 0;
+
 /** 1ms経過したか */
 static BOOL g_Is1msElapsed = FALSE;
+
+/** 10ms経過したか */
+static BOOL g_Is10msElapsed = FALSE;
+
+/** 100ms経過したか */
+static BOOL g_Is100msElapsed = FALSE;
 
 /************************************************************
  *  prototype
@@ -51,21 +60,21 @@ void Armor_mainLoop(void)
 	while (1U) {
 		// 1ms周期処理
 		if (g_Is1msElapsed == TRUE) {
-			// 周期処理中にSysTickは進むため一時退避する必要有り。
-			uint8_t nowSysTick = g_SysTick;
-			
 			g_Is1msElapsed = FALSE;
+			g_1msCyclicProcCount++;
 			_1msCyclicProc();
-			
-			// 10ms周期処理
-			if ((nowSysTick % 10) == 0) {
-				_10msCyclicProc();
-
-				// 100ms周期処理
-				if ((nowSysTick % 100) == 0) {
-					_100msCyclicProc();
-				}
-			}
+		}
+		
+		// 10ms周期処理
+		if (g_Is10msElapsed == TRUE) {
+			g_Is10msElapsed = FALSE;
+			_10msCyclicProc();
+		}
+		
+		// 100ms周期処理
+		if (g_Is100msElapsed == TRUE) {
+			g_Is100msElapsed = FALSE;
+			_100msCyclicProc();
 		}
 		
 		R_WDT_Restart();
@@ -74,8 +83,19 @@ void Armor_mainLoop(void)
 
 void Armor_1msCyclicHandler(void)
 {
+	// 割り込みハンドラ上でフラグ更新処理を行うため、
+	// 以下の処理内でg_SysTickの値は変動しない。
+	
 	g_SysTick++;
 	g_Is1msElapsed = TRUE;
+	
+	if ((g_SysTick % 10) == 0) {
+		g_Is10msElapsed = TRUE;
+		
+		if ((g_SysTick % 100) == 0) {
+			g_Is100msElapsed = TRUE;
+		}
+	}
 }
 
 void Armor_latchHandler(void)
@@ -102,7 +122,7 @@ static void _100msCyclicProc(void)
 	static volatile uint8_t count = 0;
 	
 	count++;
-	if (count > 5) {
+	if (count >= 5) {
 		count = 0;
 		P3_bit.no0 ^= 1;
 	}
