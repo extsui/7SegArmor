@@ -16,6 +16,17 @@
 
 #define COMMAND_BUF_SIZE	(256)
 
+#define PATTERN_7SEG_0	(0xfc)
+#define PATTERN_7SEG_1	(0x60)
+#define PATTERN_7SEG_2	(0xda)
+#define PATTERN_7SEG_3	(0xf2)
+#define PATTERN_7SEG_4	(0x66)
+#define PATTERN_7SEG_5	(0xb6)
+#define PATTERN_7SEG_6	(0xbe)
+#define PATTERN_7SEG_7	(0xe4)
+#define PATTERN_7SEG_8	(0xfe)
+#define PATTERN_7SEG_9	(0xf6)
+
 static uint8_t g_CommandBuf[COMMAND_BUF_SIZE];
 static uint16_t g_CommandBufIndex = 0;
 
@@ -24,6 +35,9 @@ static uint32_t g_CommandRecvCount = 0;
 
 // 1コマンド受信完了フラグ
 static BOOL g_IsCommandReceived = FALSE;
+
+// スレーブ送信完了フラグ
+static BOOL g_IsSlaveSendend = FALSE;
 
 /************************************************************
  *  prototype
@@ -121,9 +135,45 @@ static void Command_onReceive(const uint8_t *command)
 		printf("%d\n", g_CommandRecvCount);
 		break;
 		
-	case 9:
-		// CSI10: 送信機能
-		//R_CSI10_Send();
+	case 3:	// 連結表示設定コマンド
+		// TODO:
+		// 最終的にはシリアルから設定したデータを送るようにする。
+		// 開発中は固定データを送ってデバッグする。
+		{
+			// <通信プロトコル>
+			// [0    ]: 固定で1 (表示コマンドID)
+			// [1..32]: 7セグ表示データ(左上から右下に向かう順に指定)
+			static const uint8_t test_data[] = {
+				1,
+				PATTERN_7SEG_0, PATTERN_7SEG_1, PATTERN_7SEG_2, PATTERN_7SEG_3, PATTERN_7SEG_4, PATTERN_7SEG_5, PATTERN_7SEG_6, PATTERN_7SEG_7,
+				PATTERN_7SEG_8, PATTERN_7SEG_9, PATTERN_7SEG_0, PATTERN_7SEG_1, PATTERN_7SEG_2, PATTERN_7SEG_3, PATTERN_7SEG_4, PATTERN_7SEG_5,
+				PATTERN_7SEG_6, PATTERN_7SEG_7, PATTERN_7SEG_8, PATTERN_7SEG_9, PATTERN_7SEG_0, PATTERN_7SEG_1, PATTERN_7SEG_2, PATTERN_7SEG_3,
+				PATTERN_7SEG_4, PATTERN_7SEG_5, PATTERN_7SEG_6, PATTERN_7SEG_7, PATTERN_7SEG_8, PATTERN_7SEG_9, PATTERN_7SEG_0, 0xFF,
+			};
+			
+			R_CSI10_Send((uint8_t *)test_data, 33);
+			while (g_IsSlaveSendend == FALSE) {
+				NOP();
+			}
+			g_IsSlaveSendend = FALSE;
+			
+			// 少しの間待つ
+			{
+				volatile uint32_t t;
+				for (t = 0; t < 100; t++) {
+					NOP();
+				}
+			}
+						
+			P13_bit.no0 = 1;
+			P13_bit.no0 = 0;
+			
+			PRINTF("Sendend.\n");
+		}
+		break;
+		
+	case 4:	// 連結輝度設定コマンド
+		PRINTF("Not Implemented.");
 		break;
 		
 	default:
@@ -141,6 +191,11 @@ void Command_receivedHandler(void)
 		g_CommandBufIndex++;
 	}
 	R_UART2_Receive(&g_CommandBuf[g_CommandBufIndex], 1);
+}
+
+void Command_slaveSendendHandler(void)
+{
+	g_IsSlaveSendend = TRUE;
 }
 
 /************************************************************

@@ -8,6 +8,7 @@
 #include "armor.h"
 #include "finger.h"
 #include <stdio.h>
+#include <string.h>
 
 /************************************************************
  *  define
@@ -31,6 +32,12 @@ static BOOL g_Is10msElapsed = FALSE;
 /** 100ms経過したか */
 static BOOL g_Is100msElapsed = FALSE;
 
+/** LATCHバッファ */
+static uint8_t g_LatchBuffer[33];
+
+/** LATCHトリガ受信フラグ */
+static BOOL g_IsLatchTriggerReceived = FALSE;
+
 /************************************************************
  *  prototype
  ************************************************************/
@@ -51,6 +58,9 @@ void Armor_init(void)
 	R_CSI01_Start();
 	R_CSI10_Start();
 	R_INTC10_Start();
+	
+	// マスタからの受信準備
+	R_CSI01_Receive(g_LatchBuffer, 33);
 	
 	R_IT_Start();
 }
@@ -100,7 +110,11 @@ void Armor_1msCyclicHandler(void)
 
 void Armor_latchHandler(void)
 {
-	// TODO: Not Implemented.
+	// マスタからのLATCH信号をスレーブに流す
+	P13_bit.no0 = 1;
+	P13_bit.no0 = 0;
+	
+	g_IsLatchTriggerReceived = TRUE;
 }
 
 /************************************************************
@@ -108,6 +122,21 @@ void Armor_latchHandler(void)
  ************************************************************/
 static void _1msCyclicProc(void)
 {
+	// LATCHトリガがかかったなら今のLATCHバッファの内容で
+	// 7SegFingerの表示を更新する。
+	// TODO: LATCHバッファのデータチェックが必要
+	if (g_IsLatchTriggerReceived == TRUE) {
+		g_IsLatchTriggerReceived = FALSE;
+		
+		if (g_LatchBuffer[0] == 1) {
+			Finger_setDisplayAll(&g_LatchBuffer[1]);
+			PRINTF("Slave Update.\n");
+		} else {
+			PRINTF("Bad Command.\n");
+		}
+		memset(g_LatchBuffer, 0, sizeof(g_LatchBuffer));
+	}
+	
 	Command_proc();
 	Finger_update();
 }

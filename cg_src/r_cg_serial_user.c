@@ -223,7 +223,8 @@ static void __near r_csi10_interrupt(void)
 static void r_csi10_callback_sendend(void)
 {
     /* Start user code. Do not edit comment generated here */
-    /* End user code. Do not edit comment generated here */
+    Command_slaveSendendHandler();
+	/* End user code. Do not edit comment generated here */
 }
 
 /***********************************************************************************************************************
