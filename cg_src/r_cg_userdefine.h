@@ -43,5 +43,11 @@ typedef enum {
 
 #define PRINTF(...)  printf(__VA_ARGS__)
 
+// 32MHz最速でピンの上げ下げを行うとそれを受ける側の
+// INTC割り込みがH/W的に間に合わない問題が発生したので、
+// 上げ下げ間に少し遅延を入れる必要がある。
+// 以下の定義で約250ns@32MHzの遅延を生成できる。
+#define PULSE_DELAY()	do { NOP(); NOP(); NOP(); NOP(); NOP(); } while (0)
+
 /* End user code. Do not edit comment generated here */
 #endif

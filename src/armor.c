@@ -110,8 +110,10 @@ void Armor_1msCyclicHandler(void)
 
 void Armor_latchHandler(void)
 {
-	// マスタからのLATCH信号をスレーブに流す
+	// マスタからのLATCH信号をスレーブに流す。
+	// 最速だとINTC割り込みを取りこぼすので遅延が必要。
 	P13_bit.no0 = 1;
+	PULSE_DELAY();
 	P13_bit.no0 = 0;
 	
 	g_IsLatchTriggerReceived = TRUE;

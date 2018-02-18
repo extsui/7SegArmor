@@ -164,8 +164,10 @@ static void Command_onReceive(const uint8_t *command)
 					NOP();
 				}
 			}
-						
+			
+			// Å‘¬‚¾‚ÆINTCŠ„‚è‚İ‚ğæ‚è‚±‚Ú‚·‚Ì‚Å’x‰„‚ª•K—vB
 			P13_bit.no0 = 1;
+			PULSE_DELAY();
 			P13_bit.no0 = 0;
 			
 			PRINTF("Sendend.\n");
