@@ -59,7 +59,37 @@ static uint8_t atoh(uint8_t c_h, uint8_t c_l);
 void Command_init(void)
 {
 	g_CommandBufIndex = 0;
-    R_UART2_Start();
+	
+	// 上流からの電源供給時にUSB駆動表示LEDが点灯してしまう対策
+	// 
+	// [症状]
+	// 上流からの電源供給時にJP1-2ショートでD1-LEDが点灯する。
+	// ※期待する動作はD2-LEDのみが点灯すること。
+	//
+	// [原因]
+	// TXD2(P13)とRXD2(P14)からH電圧が出力されており、この2端子を
+	// 経由してRL78からFT232RLに電源が供給されている(3V後半)。
+	//
+	// [対策]
+	// 起動後にP13とP14の入力電圧を見て、どちらもL電圧だったら
+	// USB電源供給無しと判断してUART2を初期化しない。
+	PM1_bit.no3 = 1U;	// P13入力
+	PM1_bit.no4 = 1U;	// P14入力
+	R_UART2_Stop();
+
+	{
+		// 最速だと判定に失敗するので少しディレイを入れる。
+		volatile uint32_t t;
+		for (t = 0; t < 10000; t++) {
+			NOP();
+		}
+	}
+	
+	if (!((P1_bit.no3 == 0U) && (P1_bit.no4 == 0U))) {
+		// USB電源供給なので端子設定を元に戻す。
+		R_UART2_Create();
+		R_UART2_Start();
+	}
 	R_UART2_Receive(&g_CommandBuf[g_CommandBufIndex], 1);
 }
 
