@@ -23,7 +23,7 @@
 * Device(s)    : R5F100LE
 * Tool-Chain   : CCRL
 * Description  : This file implements device driver for PCLBUZ module.
-* Creation Date: 2018/02/09
+* Creation Date: 
 ***********************************************************************************************************************/
 
 #ifndef PCLBUZ_H

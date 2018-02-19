@@ -36,6 +36,7 @@ Includes
 #include "r_cg_serial.h"
 #include "r_cg_wdt.h"
 #include "r_cg_it.h"
+#include "r_cg_pclbuz.h"
 /* Start user code for include. Do not edit comment generated here */
 #include "iodefine.h"
 #include <stdio.h>
@@ -87,6 +88,8 @@ void R_MAIN_UserInit(void)
 	Command_init();
 	Finger_init();
 	Armor_init();
+	
+	R_PCLBUZ0_Start();
 	EI();
     /* End user code. Do not edit comment generated here */
 }

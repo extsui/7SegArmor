@@ -23,7 +23,7 @@
 * Device(s)    : R5F100LE
 * Tool-Chain   : CCRL
 * Description  : This file implements device driver for PCLBUZ module.
-* Creation Date: 2018/02/09
+* Creation Date: 
 ***********************************************************************************************************************/
 
 /***********************************************************************************************************************
@@ -56,7 +56,7 @@ Global variables and functions
 void R_PCLBUZ0_Create(void)
 {
     PCLOE0 = 0U;    /* disable PCLBUZ0 operation */
-    CKS0 = _04_PCLBUZ_OUTCLK_fMAIN4;
+    CKS0 = _03_PCLBUZ_OUTCLK_fMAIN3;
     /* Set PCLBUZ0 pin */
     P14 &= 0xFEU;
     PM14 &= 0xFEU;
