@@ -18,11 +18,11 @@
 ***********************************************************************************************************************/
 
 /***********************************************************************************************************************
-* File Name    : r_main.c
+* File Name    : r_cg_dmac_user.c
 * Version      : CodeGenerator for RL78/G13 V2.05.00.06 [10 Nov 2017]
 * Device(s)    : R5F100LE
 * Tool-Chain   : CCRL
-* Description  : This file implements main function.
+* Description  : This file implements device driver for DMAC module.
 * Creation Date: 
 ***********************************************************************************************************************/
 
@@ -30,26 +30,17 @@
 Includes
 ***********************************************************************************************************************/
 #include "r_cg_macrodriver.h"
-#include "r_cg_cgc.h"
-#include "r_cg_port.h"
-#include "r_cg_intc.h"
-#include "r_cg_serial.h"
-#include "r_cg_wdt.h"
-#include "r_cg_it.h"
-#include "r_cg_pclbuz.h"
 #include "r_cg_dmac.h"
 /* Start user code for include. Do not edit comment generated here */
-#include "iodefine.h"
-#include <stdio.h>
 #include "command.h"
-#include "finger.h"
-#include "armor.h"
 /* End user code. Do not edit comment generated here */
 #include "r_cg_userdefine.h"
 
 /***********************************************************************************************************************
 Pragma directive
 ***********************************************************************************************************************/
+#pragma interrupt r_dmac0_interrupt(vect=INTDMA0)
+#pragma interrupt r_dmac1_interrupt(vect=INTDMA1)
 /* Start user code for pragma. Do not edit comment generated here */
 /* End user code. Do not edit comment generated here */
 
@@ -58,40 +49,32 @@ Global variables and functions
 ***********************************************************************************************************************/
 /* Start user code for global. Do not edit comment generated here */
 /* End user code. Do not edit comment generated here */
-void R_MAIN_UserInit(void);
 
 /***********************************************************************************************************************
-* Function Name: main
-* Description  : This function implements main function.
+* Function Name: r_dmac0_interrupt
+* Description  : This function is INTDMA0 interrupt service routine.
 * Arguments    : None
 * Return Value : None
 ***********************************************************************************************************************/
-void main(void)
+static void __near r_dmac0_interrupt(void)
 {
-    R_MAIN_UserInit();
     /* Start user code. Do not edit comment generated here */
-	printf("7SegArmor started.\n");
-	Armor_mainLoop();
-	printf("7SegArmor exit.\n");
-	while (1U);
+	// LATCH立ち上がりが来た時点でINTC割り込みがかかるので、DMA受信完了時は何もしない。
+	// TODO: DMAC受信完了→INTC割り込み が正規ルート。逆転した場合のエラーログ吐き出し処理を実装すること。
+	NOP();
     /* End user code. Do not edit comment generated here */
 }
 
 /***********************************************************************************************************************
-* Function Name: R_MAIN_UserInit
-* Description  : This function adds user code before implementing main function.
+* Function Name: r_dmac1_interrupt
+* Description  : This function is INTDMA1 interrupt service routine.
 * Arguments    : None
 * Return Value : None
 ***********************************************************************************************************************/
-void R_MAIN_UserInit(void)
+static void __near r_dmac1_interrupt(void)
 {
     /* Start user code. Do not edit comment generated here */
-	Command_init();
-	Finger_init();
-	Armor_init();
-	
-	R_PCLBUZ0_Start();
-	EI();
+	Command_slaveSendendHandler();
     /* End user code. Do not edit comment generated here */
 }
 

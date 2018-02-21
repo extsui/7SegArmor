@@ -4,6 +4,7 @@
 #include "r_cg_it.h"
 #include "r_cg_serial.h"
 #include "r_cg_intc.h"
+#include "r_cg_dmac.h"
 #include "command.h"
 #include "armor.h"
 #include "finger.h"
@@ -60,7 +61,7 @@ void Armor_init(void)
 	R_INTC10_Start();
 	
 	// マスタからの受信準備
-	R_CSI01_Receive(g_LatchBuffer, 33);
+	R_DMAC0_StartReceive(g_LatchBuffer, 33);
 	
 	R_IT_Start();
 }
@@ -110,6 +111,11 @@ void Armor_1msCyclicHandler(void)
 
 void Armor_latchHandler(void)
 {
+	// LATCH信号が来たということはSPI送受信が
+	// 完了しているはずなのでDMAを中断する。
+	// TODO: この時点でDMAが動作している状況は異常なのでログ出力する。
+	NOP();
+	
 	// マスタからのLATCH信号をスレーブに流す。
 	// 最速だとINTC割り込みを取りこぼすので遅延が必要。
 	P13_bit.no0 = 1;
@@ -136,7 +142,9 @@ static void _1msCyclicProc(void)
 		} else {
 			PRINTF("Bad Command.\n");
 		}
+		
 		memset(g_LatchBuffer, 0, sizeof(g_LatchBuffer));
+		R_DMAC0_StartReceive(g_LatchBuffer, 33);
 	}
 	
 	Command_proc();

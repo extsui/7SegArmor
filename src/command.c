@@ -1,6 +1,7 @@
 #include "r_cg_macrodriver.h"
 #include "r_cg_userdefine.h"
 #include "r_cg_serial.h" /* R_UART2_Receive() */
+#include "r_cg_dmac.h"
 #include "command.h"
 #include "finger.h"
 #include <stdio.h>
@@ -173,7 +174,10 @@ static void Command_onReceive(const uint8_t *command)
 			// <通信プロトコル>
 			// [0    ]: 固定で1 (表示コマンドID)
 			// [1..32]: 7セグ表示データ(左上から右下に向かう順に指定)
-			static const uint8_t test_data[] = {
+			// 
+			// ★注意★
+			// DMA転送対象領域は内蔵RAMだけであり、const領域は転送できない。
+			static uint8_t test_data[] = {
 				1,
 				PATTERN_7SEG_0, PATTERN_7SEG_1, PATTERN_7SEG_2, PATTERN_7SEG_3, PATTERN_7SEG_4, PATTERN_7SEG_5, PATTERN_7SEG_6, PATTERN_7SEG_7,
 				PATTERN_7SEG_8, PATTERN_7SEG_9, PATTERN_7SEG_0, PATTERN_7SEG_1, PATTERN_7SEG_2, PATTERN_7SEG_3, PATTERN_7SEG_4, PATTERN_7SEG_5,
@@ -181,7 +185,7 @@ static void Command_onReceive(const uint8_t *command)
 				PATTERN_7SEG_4, PATTERN_7SEG_5, PATTERN_7SEG_6, PATTERN_7SEG_7, PATTERN_7SEG_8, PATTERN_7SEG_9, PATTERN_7SEG_0, 0xFF,
 			};
 			
-			R_CSI10_Send((uint8_t *)test_data, 33);
+			R_DMAC1_StartSend((uint8_t *)test_data, 33);
 			while (g_IsSlaveSendend == FALSE) {
 				NOP();
 			}

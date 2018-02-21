@@ -37,6 +37,7 @@ Includes
 #include "r_cg_wdt.h"
 #include "r_cg_it.h"
 #include "r_cg_pclbuz.h"
+#include "r_cg_dmac.h"
 /* Start user code for include. Do not edit comment generated here */
 /* End user code. Do not edit comment generated here */
 #include "r_cg_userdefine.h"
@@ -70,6 +71,8 @@ void R_Systeminit(void)
     R_WDT_Create();
     R_IT_Create();
     R_PCLBUZ0_Create();
+    R_DMAC0_Create();
+    R_DMAC1_Create();
     R_INTC_Create();
 
     IAWCTL = 0x80U;
