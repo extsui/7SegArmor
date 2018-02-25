@@ -190,33 +190,31 @@ static void Command_onReceive(const uint8_t *command)
 				PATTERN_7SEG_0, PATTERN_7SEG_1, PATTERN_7SEG_2, PATTERN_7SEG_3, PATTERN_7SEG_4, PATTERN_7SEG_5, PATTERN_7SEG_6, PATTERN_7SEG_7,
 				PATTERN_7SEG_8, PATTERN_7SEG_9, PATTERN_7SEG_0, PATTERN_7SEG_1, PATTERN_7SEG_2, PATTERN_7SEG_3, PATTERN_7SEG_4, PATTERN_7SEG_5,
 				PATTERN_7SEG_6, PATTERN_7SEG_7, PATTERN_7SEG_8, PATTERN_7SEG_9, PATTERN_7SEG_0, PATTERN_7SEG_1, PATTERN_7SEG_2, PATTERN_7SEG_3,
+				
+				1,
+				PATTERN_7SEG_4, PATTERN_7SEG_5, PATTERN_7SEG_6, PATTERN_7SEG_7, PATTERN_7SEG_8, PATTERN_7SEG_9, PATTERN_7SEG_0, PATTERN_7SEG_1,
+				PATTERN_7SEG_2, PATTERN_7SEG_3, PATTERN_7SEG_4, PATTERN_7SEG_5, PATTERN_7SEG_6, PATTERN_7SEG_7, PATTERN_7SEG_8, PATTERN_7SEG_9,
+				PATTERN_7SEG_0, PATTERN_7SEG_1, PATTERN_7SEG_2, PATTERN_7SEG_3, PATTERN_7SEG_4, PATTERN_7SEG_5, PATTERN_7SEG_6, PATTERN_7SEG_7,
+				PATTERN_7SEG_8, PATTERN_7SEG_9, PATTERN_7SEG_0, PATTERN_7SEG_1, PATTERN_7SEG_2, PATTERN_7SEG_3, PATTERN_7SEG_4, PATTERN_7SEG_5,
 			};
 			
-			R_DMAC1_StartSend((uint8_t *)&test_data[0], 33);
-			while (g_IsMasterSendend == FALSE) {
-				NOP();
-			}
-			g_IsMasterSendend = FALSE;
+			int i;
 			
-			// 少しの間待つ(DMAハンドラ用のディレイ)
-			{
-				volatile uint32_t t;
-				for (t = 0; t < 100; t++) {
+			Finger_setDisplayAll(&test_data[1]);
+			
+			for (i = 1; i < 3; i++) {
+				R_DMAC1_StartSend((uint8_t *)&test_data[i * 33], 33);
+				while (g_IsMasterSendend == FALSE) {
 					NOP();
 				}
-			}
-			
-			R_DMAC1_StartSend((uint8_t *)&test_data[33], 33);
-			while (g_IsMasterSendend == FALSE) {
-				NOP();
-			}
-			g_IsMasterSendend = FALSE;
-			
-			// 少しの間待つ(DMAハンドラ用のディレイ)
-			{
-				volatile uint32_t t;
-				for (t = 0; t < 100; t++) {
-					NOP();
+				g_IsMasterSendend = FALSE;
+
+				// 少しの間待つ(DMAハンドラ用のディレイ)
+				{
+					volatile uint32_t t;
+					for (t = 0; t < 100; t++) {
+						NOP();
+					}
 				}
 			}
 			
@@ -224,7 +222,10 @@ static void Command_onReceive(const uint8_t *command)
 			// TODO: タイマ割り込みハンドラにした方がいいかも。
 			{
 				volatile uint32_t t;
-				for (t = 0; t < 10000; t++) {
+				// 100だとNG
+				// 1000だとOK
+				// 10000だとOK
+				for (t = 0; t < /*10000*/1000; t++) {
 					NOP();
 				}
 			}
