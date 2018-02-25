@@ -29,6 +29,6 @@ void Command_receivedHandler(void);
 /**
  * スレーブ送信完了ハンドラ
  */
-void Command_slaveSendendHandler(void);
+void Command_masterSendendHandler(void);
 
 #endif /* COMMAND_H_INCLUDED */

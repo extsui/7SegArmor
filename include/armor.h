@@ -11,6 +11,11 @@ void Armor_mainLoop(void);
 void Armor_1msCyclicHandler(void);
 
 /**
+ * 下流側受信終了ハンドラ
+ */
+void Armor_slaveReceiveendHandler(void);
+
+/**
  * LATCH立ち上がりハンドラ
  */
 void Armor_latchHandler(void);

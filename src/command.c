@@ -37,8 +37,9 @@ static uint32_t g_CommandRecvCount = 0;
 // 1コマンド受信完了フラグ
 static BOOL g_IsCommandReceived = FALSE;
 
-// スレーブ送信完了フラグ
-static BOOL g_IsSlaveSendend = FALSE;
+/** マスタ送信完了フラグ */
+/** TODO: armor.cに移動すること */
+static BOOL g_IsMasterSendend = FALSE;
 
 /************************************************************
  *  prototype
@@ -182,19 +183,48 @@ static void Command_onReceive(const uint8_t *command)
 				PATTERN_7SEG_0, PATTERN_7SEG_1, PATTERN_7SEG_2, PATTERN_7SEG_3, PATTERN_7SEG_4, PATTERN_7SEG_5, PATTERN_7SEG_6, PATTERN_7SEG_7,
 				PATTERN_7SEG_8, PATTERN_7SEG_9, PATTERN_7SEG_0, PATTERN_7SEG_1, PATTERN_7SEG_2, PATTERN_7SEG_3, PATTERN_7SEG_4, PATTERN_7SEG_5,
 				PATTERN_7SEG_6, PATTERN_7SEG_7, PATTERN_7SEG_8, PATTERN_7SEG_9, PATTERN_7SEG_0, PATTERN_7SEG_1, PATTERN_7SEG_2, PATTERN_7SEG_3,
-				PATTERN_7SEG_4, PATTERN_7SEG_5, PATTERN_7SEG_6, PATTERN_7SEG_7, PATTERN_7SEG_8, PATTERN_7SEG_9, PATTERN_7SEG_0, 0xFF,
+				PATTERN_7SEG_4, PATTERN_7SEG_5, PATTERN_7SEG_6, PATTERN_7SEG_7, PATTERN_7SEG_8, PATTERN_7SEG_9, PATTERN_7SEG_0, PATTERN_7SEG_1,
+				
+				1,
+				PATTERN_7SEG_2, PATTERN_7SEG_3, PATTERN_7SEG_4, PATTERN_7SEG_5, PATTERN_7SEG_6, PATTERN_7SEG_7, PATTERN_7SEG_8, PATTERN_7SEG_9,
+				PATTERN_7SEG_0, PATTERN_7SEG_1, PATTERN_7SEG_2, PATTERN_7SEG_3, PATTERN_7SEG_4, PATTERN_7SEG_5, PATTERN_7SEG_6, PATTERN_7SEG_7,
+				PATTERN_7SEG_8, PATTERN_7SEG_9, PATTERN_7SEG_0, PATTERN_7SEG_1, PATTERN_7SEG_2, PATTERN_7SEG_3, PATTERN_7SEG_4, PATTERN_7SEG_5,
+				PATTERN_7SEG_6, PATTERN_7SEG_7, PATTERN_7SEG_8, PATTERN_7SEG_9, PATTERN_7SEG_0, PATTERN_7SEG_1, PATTERN_7SEG_2, PATTERN_7SEG_3,
 			};
 			
-			R_DMAC1_StartSend((uint8_t *)test_data, 33);
-			while (g_IsSlaveSendend == FALSE) {
+			R_DMAC1_StartSend((uint8_t *)&test_data[0], 33);
+			while (g_IsMasterSendend == FALSE) {
 				NOP();
 			}
-			g_IsSlaveSendend = FALSE;
+			g_IsMasterSendend = FALSE;
 			
-			// 少しの間待つ
+			// 少しの間待つ(DMAハンドラ用のディレイ)
 			{
 				volatile uint32_t t;
 				for (t = 0; t < 100; t++) {
+					NOP();
+				}
+			}
+			
+			R_DMAC1_StartSend((uint8_t *)&test_data[33], 33);
+			while (g_IsMasterSendend == FALSE) {
+				NOP();
+			}
+			g_IsMasterSendend = FALSE;
+			
+			// 少しの間待つ(DMAハンドラ用のディレイ)
+			{
+				volatile uint32_t t;
+				for (t = 0; t < 100; t++) {
+					NOP();
+				}
+			}
+			
+			// 結構待つ(1フレームDMA送信分待つ必要あり)
+			// TODO: タイマ割り込みハンドラにした方がいいかも。
+			{
+				volatile uint32_t t;
+				for (t = 0; t < 10000; t++) {
 					NOP();
 				}
 			}
@@ -229,9 +259,9 @@ void Command_receivedHandler(void)
 	R_UART2_Receive(&g_CommandBuf[g_CommandBufIndex], 1);
 }
 
-void Command_slaveSendendHandler(void)
+void Command_masterSendendHandler(void)
 {
-	g_IsSlaveSendend = TRUE;
+	g_IsMasterSendend = TRUE;
 }
 
 /************************************************************
