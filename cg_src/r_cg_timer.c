@@ -98,6 +98,14 @@ void R_TAU0_Create(void)
     TDR00 = _FFFF_TAU_TDR00_VALUE;
     TO0 &= ~_0001_TAU_CH0_OUTPUT_VALUE_1;
     TOE0 &= ~_0001_TAU_CH0_OUTPUT_ENABLE;
+    /* Channel 1 used as interval timer */
+    TMR01 = _0000_TAU_CLOCK_SELECT_CKM0 | _0000_TAU_CLOCK_MODE_CKS | _0000_TAU_16BITS_MODE |
+            _0000_TAU_TRIGGER_SOFTWARE | _0000_TAU_MODE_INTERVAL_TIMER | _0000_TAU_START_INT_UNUSED;
+    TDR01 = _FFFF_TAU_TDR01_VALUE;
+    TOM0 &= ~_0002_TAU_CH1_OUTPUT_COMBIN;
+    TOL0 &= ~_0002_TAU_CH1_OUTPUT_LEVEL_L;
+    TO0 &= ~_0002_TAU_CH1_OUTPUT_VALUE_1;
+    TOE0 &= ~_0002_TAU_CH1_OUTPUT_ENABLE;
 }
 
 /***********************************************************************************************************************
@@ -122,7 +130,30 @@ void R_TAU0_Channel0_Stop(void)
     TT0 |= _0001_TAU_CH0_STOP_TRG_ON;
 }
 
+/***********************************************************************************************************************
+* Function Name: R_TAU0_Channel1_Start
+* Description  : This function starts TAU0 channel 1 counter.
+* Arguments    : None
+* Return Value : None
+***********************************************************************************************************************/
+void R_TAU0_Channel1_Start(void)
+{
+    TS0 |= _0002_TAU_CH1_START_TRG_ON;
+}
+
+/***********************************************************************************************************************
+* Function Name: R_TAU0_Channel1_Stop
+* Description  : This function stops TAU0 channel 1 counter.
+* Arguments    : None
+* Return Value : None
+***********************************************************************************************************************/
+void R_TAU0_Channel1_Stop(void)
+{
+    TT0 |= _0002_TAU_CH1_STOP_TRG_ON;
+}
+
 /* Start user code for adding. Do not edit comment generated here */
+
 // ビジータイマ設定のオーバヘッド(us)
 #define BUSY_TIMER_OVERHEAD_US	(4U)
 
@@ -152,19 +183,25 @@ void R_TAU0_BusyWait(uint16_t usec)
 
 /**
  * 測定区間開始
+ * @note R_TAU0_StopMeasure()後に呼び出すこと(起動後初回は除く)。
  */
 void R_TAU0_StartMeasure(void)
 {
-	// TODO:
+	R_TAU0_Channel1_Start();
 }
 
 /**
  * 測定区間終了
+ * 測定可能範囲(0～65535us)を越えた場合は繰り返しになる。
+ * @return 経過時間[us]
+ * @note R_TAU0_StartMeasure()後に呼び出すこと。
  */
 uint16_t R_TAU0_StopMeasure(void)
 {
-	// TODO:
-	return 0;
+	uint16_t us;
+	us = TDR01 - TCR01;
+	R_TAU0_Channel1_Stop();
+	return us;
 }
 
 /* End user code. Do not edit comment generated here */

@@ -397,6 +397,10 @@ Macro definitions
 #define _FFFF_TAU_TDR00_VALUE                   (0xFFFFU)
 /* Clock divisor for TAU0 channel 0 */
 #define _0020_TAU0_CHANNEL0_DIVISOR             (0x0020U)
+/* 16-bit timer data register 01 (TDR01) */
+#define _FFFF_TAU_TDR01_VALUE                   (0xFFFFU)
+/* Clock divisor for TAU0 channel 1 */
+#define _0020_TAU0_CHANNEL1_DIVISOR             (0x0020U)
 
 /***********************************************************************************************************************
 Typedef definitions
@@ -408,8 +412,13 @@ Global functions
 void R_TAU0_Create(void);
 void R_TAU0_Channel0_Start(void);
 void R_TAU0_Channel0_Stop(void);
+void R_TAU0_Channel1_Start(void);
+void R_TAU0_Channel1_Stop(void);
 
 /* Start user code for function. Do not edit comment generated here */
+// R_TAU0_Channel0/1_Start/Stop()は以下の関数で占有するので使用禁止。
 void R_TAU0_BusyWait(uint16_t usec);
+void R_TAU0_StartMeasure(void);
+uint16_t R_TAU0_StopMeasure(void);
 /* End user code. Do not edit comment generated here */
 #endif
