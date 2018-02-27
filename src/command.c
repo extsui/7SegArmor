@@ -2,6 +2,7 @@
 #include "r_cg_userdefine.h"
 #include "r_cg_serial.h" /* R_UART2_Receive() */
 #include "r_cg_dmac.h"
+#include "r_cg_timer.h"
 #include "command.h"
 #include "finger.h"
 #include <stdio.h>
@@ -208,27 +209,22 @@ static void Command_onReceive(const uint8_t *command)
 					NOP();
 				}
 				g_IsMasterSendend = FALSE;
-
-				// 少しの間待つ(DMAハンドラ用のディレイ)
-				{
-					volatile uint32_t t;
-					for (t = 0; t < 100; t++) {
-						NOP();
-					}
-				}
+				
+				// [DMA間遅延時間]
+				// 下流機器のDMA完了割り込みの処理時間分待つ。
+				// ・OK：20us
+				// ・OK：15us
+				// ・NG：10us
+				//   ⇒遅延時間は、20[us] 見ておけば問題ないと判断。
+				R_TAU0_BusyWait(20);
 			}
 			
-			// 結構待つ(1フレームDMA送信分待つ必要あり)
-			// TODO: タイマ割り込みハンドラにした方がいいかも。
-			{
-				volatile uint32_t t;
-				// 100だとNG
-				// 1000だとOK
-				// 10000だとOK
-				for (t = 0; t < /*10000*/1000; t++) {
-					NOP();
-				}
-			}
+			// [LATCH更新遅延時間]
+			// DMA転送1回分+αの時間を確保する必要がある。
+			// ・DMA1回理論値：33*8[bit] / 1[Mbps] = 264[us]
+			// ・DMA1回測定値：267～268[us]
+			//   ⇒遅延時間は、300[us] 見ておけば問題ないと判断。
+			R_TAU0_BusyWait(300);
 			
 			// 最速だとINTC割り込みを取りこぼすので遅延が必要。
 			P13_bit.no0 = 1;

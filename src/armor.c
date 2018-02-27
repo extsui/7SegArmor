@@ -79,6 +79,8 @@ void Armor_init(void)
 	R_IT_Start();
 }
 
+volatile static uint16_t elapsed_us = 0;
+
 void Armor_mainLoop(void)
 {
 	while (1U) {
@@ -101,18 +103,7 @@ void Armor_mainLoop(void)
 			_100msCyclicProc();
 		}
 		
-		// タイマ精度測定用のテストコード
-		while (1) {
-			volatile static uint16_t us = 0;	// ⇒AXレジスタ
-
-			P3_bit.no0 = 0;
-			R_TAU0_StartMeasure();
-			R_TAU0_BusyWait(100);
-			us = R_TAU0_StopMeasure();	// 100付近の値になるはず
-			P3_bit.no0 = 1;
-			
-			R_WDT_Restart();
-		}
+		R_WDT_Restart();
     }
 }
 
