@@ -5,6 +5,7 @@
 #include "r_cg_serial.h"
 #include "r_cg_intc.h"
 #include "r_cg_dmac.h"
+#include "r_cg_timer.h"
 #include "command.h"
 #include "armor.h"
 #include "finger.h"
@@ -100,12 +101,19 @@ void Armor_mainLoop(void)
 			_100msCyclicProc();
 		}
 		
-		R_WDT_Restart();
+		// タイマ精度測定用のテストコード
+		while (1) {
+			P3_bit.no0 = 0;
+			R_TAU0_BusyWait(100);
+			P3_bit.no0 = 1;
+			
+			R_WDT_Restart();
+		}
     }
 }
 
 void Armor_1msCyclicHandler(void)
-{
+{	
 	// 割り込みハンドラ上でフラグ更新処理を行うため、
 	// 以下の処理内でg_SysTickの値は変動しない。
 	

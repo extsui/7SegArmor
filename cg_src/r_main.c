@@ -34,6 +34,7 @@ Includes
 #include "r_cg_port.h"
 #include "r_cg_intc.h"
 #include "r_cg_serial.h"
+#include "r_cg_timer.h"
 #include "r_cg_wdt.h"
 #include "r_cg_it.h"
 #include "r_cg_pclbuz.h"

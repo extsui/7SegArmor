@@ -34,6 +34,7 @@ Includes
 #include "r_cg_port.h"
 #include "r_cg_intc.h"
 #include "r_cg_serial.h"
+#include "r_cg_timer.h"
 #include "r_cg_wdt.h"
 #include "r_cg_it.h"
 #include "r_cg_pclbuz.h"
@@ -68,6 +69,7 @@ void R_Systeminit(void)
     R_PORT_Create();
     R_SAU0_Create();
     R_SAU1_Create();
+    R_TAU0_Create();
     R_WDT_Create();
     R_IT_Create();
     R_PCLBUZ0_Create();
