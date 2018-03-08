@@ -107,6 +107,13 @@ void Command_proc(void)
 	}
 }
 
+static uint16_t measure_us = 0;
+// タイムアウトテスト関数
+static void timeout_test(void)
+{
+	measure_us = R_TAU0_StopMeasure();
+}
+
 static void Command_onReceive(const uint8_t *command)
 {
 	int i;
@@ -236,7 +243,13 @@ static void Command_onReceive(const uint8_t *command)
 		break;
 		
 	case 4:	// 連結輝度設定コマンド
-		PRINTF("Not Implemented.");
+		PRINTF("Not Implemented.\n");
+		break;
+		
+	case 5:
+		PRINTF("%d[us] (1回遅れであることに注意)\n", measure_us);
+		R_TAU0_StartMeasure();
+		R_TAU0_SetTimeout(300, timeout_test);
 		break;
 		
 	default:

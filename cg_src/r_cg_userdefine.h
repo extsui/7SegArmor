@@ -32,8 +32,10 @@
 /***********************************************************************************************************************
 User definitions
 ***********************************************************************************************************************/
-
 /* Start user code for function. Do not edit comment generated here */
+#include <stddef.h>	// NULL
+#include <stdio.h>	// printf()
+
 typedef enum {
 	TRUE = 1,
 	FALSE = 0,
@@ -53,6 +55,15 @@ typedef enum {
 // 上げ下げ間に少し遅延を入れる必要がある。
 // 以下の定義で約250ns@32MHzの遅延を生成できる。
 #define PULSE_DELAY()	do { NOP(); NOP(); NOP(); NOP(); NOP(); } while (0)
+
+#define ASSERT(x)												\
+	do {														\
+		if (!(x)) {												\
+			PRINTF("Assertion failed: %s, file %s, line %d\n",	\
+					#x, __FILE__, __LINE__);					\
+			while (1);	/* WDT待ち */							\
+		}														\
+	} while (0)
 
 /* End user code. Do not edit comment generated here */
 #endif

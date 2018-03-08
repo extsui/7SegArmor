@@ -38,7 +38,9 @@ Includes
 /***********************************************************************************************************************
 Pragma directive
 ***********************************************************************************************************************/
+#pragma interrupt r_tau0_channel2_interrupt(vect=INTTM02)
 /* Start user code for pragma. Do not edit comment generated here */
+static timeout_fn_t timeout_fn = NULL;
 /* End user code. Do not edit comment generated here */
 
 /***********************************************************************************************************************
@@ -47,5 +49,46 @@ Global variables and functions
 /* Start user code for global. Do not edit comment generated here */
 /* End user code. Do not edit comment generated here */
 
+/***********************************************************************************************************************
+* Function Name: r_tau0_channel2_interrupt
+* Description  : This function is INTTM02 interrupt service routine.
+* Arguments    : None
+* Return Value : None
+***********************************************************************************************************************/
+static void __near r_tau0_channel2_interrupt(void)
+{
+    /* Start user code. Do not edit comment generated here */
+	ASSERT(timeout_fn != NULL);
+	timeout_fn();
+	timeout_fn = NULL;
+	R_TAU0_Channel2_Stop();
+    /* End user code. Do not edit comment generated here */
+}
+
 /* Start user code for adding. Do not edit comment generated here */
+// タイムアウトタイマ設定のオーバヘッド(us)
+// 「R_TAU0_SetTimeout()直前～タイムアウトハンドラ」を測定すると
+// (usec + 1～2)付近の値になる。割り込み事象発生から割り込み
+// ハンドラ先頭までに1～2usかかるので以下の値で丁度良いと推測する。
+#define TIMEOUT_TIMER_OVEHAD_US	(4)
+
+/**
+ * 指定時間(us)後に指定した関数を1回だけ呼び出す
+ * @param usec 全範囲(0～65535us)有効
+ * @param fn 呼び出す関数
+ * @note オーバヘッドにより事実上の最小値はTIMEOUT_TIMER_OVEHAD_US。
+ * @note 占有が前提なので二重呼び出しでASSERTする。
+ */
+void R_TAU0_SetTimeout(uint16_t usec, timeout_fn_t fn)
+{
+	ASSERT(timeout_fn == NULL);
+	ASSERT(fn != NULL);
+	timeout_fn = fn;
+	if (usec > TIMEOUT_TIMER_OVEHAD_US) {
+		TDR02 = usec - TIMEOUT_TIMER_OVEHAD_US;
+	} else {
+		TDR02 = 0;
+	}
+	R_TAU0_Channel2_Start();
+}
 /* End user code. Do not edit comment generated here */

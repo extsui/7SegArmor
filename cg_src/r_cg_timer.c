@@ -92,6 +92,9 @@ void R_TAU0_Create(void)
     /* Mask channel 7 interrupt */
     TMMK07 = 1U;    /* disable INTTM07 interrupt */
     TMIF07 = 0U;    /* clear INTTM07 interrupt flag */
+    /* Set INTTM02 low priority */
+    TMPR102 = 1U;
+    TMPR002 = 1U;
     /* Channel 0 used as interval timer */
     TMR00 = _0000_TAU_CLOCK_SELECT_CKM0 | _0000_TAU_CLOCK_MODE_CKS | _0000_TAU_COMBINATION_SLAVE |
             _0000_TAU_TRIGGER_SOFTWARE | _0000_TAU_MODE_INTERVAL_TIMER | _0000_TAU_START_INT_UNUSED;
@@ -106,6 +109,14 @@ void R_TAU0_Create(void)
     TOL0 &= ~_0002_TAU_CH1_OUTPUT_LEVEL_L;
     TO0 &= ~_0002_TAU_CH1_OUTPUT_VALUE_1;
     TOE0 &= ~_0002_TAU_CH1_OUTPUT_ENABLE;
+    /* Channel 2 used as interval timer */
+    TMR02 = _0000_TAU_CLOCK_SELECT_CKM0 | _0000_TAU_CLOCK_MODE_CKS | _0000_TAU_COMBINATION_SLAVE |
+            _0000_TAU_TRIGGER_SOFTWARE | _0000_TAU_MODE_INTERVAL_TIMER | _0000_TAU_START_INT_UNUSED;
+    TDR02 = _FFFF_TAU_TDR02_VALUE;
+    TOM0 &= ~_0004_TAU_CH2_OUTPUT_COMBIN;
+    TOL0 &= ~_0004_TAU_CH2_OUTPUT_LEVEL_L;
+    TO0 &= ~_0004_TAU_CH2_OUTPUT_VALUE_1;
+    TOE0 &= ~_0004_TAU_CH2_OUTPUT_ENABLE;
 }
 
 /***********************************************************************************************************************
@@ -152,6 +163,33 @@ void R_TAU0_Channel1_Stop(void)
     TT0 |= _0002_TAU_CH1_STOP_TRG_ON;
 }
 
+/***********************************************************************************************************************
+* Function Name: R_TAU0_Channel2_Start
+* Description  : This function starts TAU0 channel 2 counter.
+* Arguments    : None
+* Return Value : None
+***********************************************************************************************************************/
+void R_TAU0_Channel2_Start(void)
+{
+    TMIF02 = 0U;    /* clear INTTM02 interrupt flag */
+    TMMK02 = 0U;    /* enable INTTM02 interrupt */
+    TS0 |= _0004_TAU_CH2_START_TRG_ON;
+}
+
+/***********************************************************************************************************************
+* Function Name: R_TAU0_Channel2_Stop
+* Description  : This function stops TAU0 channel 2 counter.
+* Arguments    : None
+* Return Value : None
+***********************************************************************************************************************/
+void R_TAU0_Channel2_Stop(void)
+{
+    TT0 |= _0004_TAU_CH2_STOP_TRG_ON;
+    /* Mask channel 2 interrupt */
+    TMMK02 = 1U;    /* disable INTTM02 interrupt */
+    TMIF02 = 0U;    /* clear INTTM02 interrupt flag */
+}
+
 /* Start user code for adding. Do not edit comment generated here */
 
 // ビジータイマ設定のオーバヘッド(us)
@@ -160,7 +198,7 @@ void R_TAU0_Channel1_Stop(void)
 /**
  * ビジーにより指定期間(us)だけ待つ
  * @param usec 全範囲(0～65535us)有効
- * @note オーバヘッドにより事実上の最小値はTIMER_OVERHEAD_US。
+ * @note オーバヘッドにより事実上の最小値はBUSY_TIMER_OVERHEAD_US。
  */
 void R_TAU0_BusyWait(uint16_t usec)
 {

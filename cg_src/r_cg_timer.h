@@ -401,6 +401,10 @@ Macro definitions
 #define _FFFF_TAU_TDR01_VALUE                   (0xFFFFU)
 /* Clock divisor for TAU0 channel 1 */
 #define _0020_TAU0_CHANNEL1_DIVISOR             (0x0020U)
+/* 16-bit timer data register 02 (TDR02) */
+#define _FFFF_TAU_TDR02_VALUE                   (0xFFFFU)
+/* Clock divisor for TAU0 channel 2 */
+#define _0020_TAU0_CHANNEL2_DIVISOR             (0x0020U)
 
 /***********************************************************************************************************************
 Typedef definitions
@@ -414,11 +418,21 @@ void R_TAU0_Channel0_Start(void);
 void R_TAU0_Channel0_Stop(void);
 void R_TAU0_Channel1_Start(void);
 void R_TAU0_Channel1_Stop(void);
+void R_TAU0_Channel2_Start(void);
+void R_TAU0_Channel2_Stop(void);
 
 /* Start user code for function. Do not edit comment generated here */
-// R_TAU0_Channel0/1_Start/Stop()は以下の関数で占有するので使用禁止。
+// R_TAU0_Channel0_Start/Stop()は以下の関数で占有するので使用禁止。
 void R_TAU0_BusyWait(uint16_t usec);
+
+// R_TAU0_Channel1_Start/Stop()は以下の関数で占有するので使用禁止。
 void R_TAU0_StartMeasure(void);
 uint16_t R_TAU0_StopMeasure(void);
+
+// R_TAU0_Channel2_Start/Stop()は以下の関数で占有するので使用禁止。
+typedef void (*timeout_fn_t)(void);
+void R_TAU0_SetTimeout(uint16_t usec, timeout_fn_t fn);
+// MEMO: キャンセルは必要になった時に実装する。
+//void R_TAU0_CancelTimeout(void);
 /* End user code. Do not edit comment generated here */
 #endif
