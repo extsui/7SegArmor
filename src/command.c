@@ -75,7 +75,7 @@ static const Command g_CommandTable[] = {
 	{ "-h",	2,	cmdHelp,	"Help",						},
 	{ "-v",	2,	cmdVersion,	"Version",					},
 	{ "s",	1,	cmdSet,		"Set Param : s <p1> <p2>",	},
-	{ "g",	1,	cmdGet,		"Set Param : s <p1> <p2>",	},
+	{ "g",	1,	cmdGet,		"Get Param : g <p1>",		},
 };
 
 // TODO: armor.cに移動するべき。
@@ -213,8 +213,8 @@ static void cmdC1(const char *s)
 {
 	uint8_t i;
 	
-	// 型: [ 'S', '1', (0, 0), (0, 1), ..., (3, 7) ]
-	// 例: S1000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F202122232425262728292A2B2C2D2E2F303132333435363738393A3B3C3D3E3F\n
+	// 型: [ 'C', '1', (0, 0), (0, 1), ..., (3, 7) ]
+	// 例: C1000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F202122232425262728292A2B2C2D2E2F303132333435363738393A3B3C3D3E3F\n
 	for (i = 0; i < FINGER_7SEG_NUM*FINGER_NUM; i++) {
 		data_all[i] = atoh(s[i*2], s[i*2 + 1]);
 	}
@@ -243,8 +243,8 @@ static void cmdC2(const char *s)
 {
 	uint8_t i;
 	
-	// 型: [ 'S', '2', (0, 0), (0, 1), ..., (3, 7) ]
-	// 例: S2000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F202122232425262728292A2B2C2D2E2F303132333435363738393A3B3C3D3E3F\n
+	// 型: [ 'C', '2', (0, 0), (0, 1), ..., (3, 7) ]
+	// 例: C2000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F202122232425262728292A2B2C2D2E2F303132333435363738393A3B3C3D3E3F\n
 	for (i = 0; i < FINGER_7SEG_NUM*FINGER_NUM; i++) {
 		data_all[i] = atoh(s[i*2], s[i*2 + 1]);
 	}
@@ -272,7 +272,7 @@ static void cmdC3(const char *s)
 	g_ArmorFrameSendCount = 1;
 	
 	// 33バイトのDMA送信@1MHz≒270[us]
-		R_DMAC1_StartSend((uint8_t *)&test_data[g_ArmorFrameSendCount*33], 33);
+	R_DMAC1_StartSend((uint8_t *)&test_data[g_ArmorFrameSendCount*33], 33);
 }
 
 static void cmdC4(const char *s)
@@ -288,12 +288,22 @@ static void cmdC5(const char *s)
 
 static void cmdHelp(const char *s)
 {
-	PRINTF("Not Implemented.\n");
+	int i;
+	for (i = 0; i < ARRAY_SIZE(g_CommandTable); i++) {
+		const Command *p = &g_CommandTable[i];
+		PRINTF("%s : %s\n", p->name, p->info);
+		// TODO: PRINTFをリングバッファ化しなければ未来はない。
+		// リングバッファ操作時はDI()->EI()を徹底すること。
+		// ただし、割り込みハンドラから呼び出すときは、
+		// EI()しても多重割り込みがなければ問題はない。
+		// WORKAROUND: ↓ものすごい場当たり対処。
+		R_TAU0_BusyWait(10000);
+	}
 }
 
 static void cmdVersion(const char *s)
 {
-	PRINTF("Not Implemented.\n");
+	PRINTF("7SegArmor ver.0.1\n");
 }
 
 static void cmdSet(const char *s)
