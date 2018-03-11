@@ -12,10 +12,6 @@
  *  define
  ************************************************************/
 
-#define CMD_MAGIC_OFFSET	(0)
-#define CMD_TYPE_OFFSET		(1)
-#define CMD_DATA_OFFSET		(2)
-
 #define COMMAND_BUF_SIZE	(256)
 
 #define PATTERN_7SEG_0	(0xfc)
@@ -47,6 +43,43 @@ static uint8_t g_ArmorFrameSendNum = 0;
 
 /** 7SegArmorフレーム送信カウンタ */
 static uint8_t g_ArmorFrameSendCount = 0;
+
+/** コマンド処理関数 */
+typedef void (*cmdFnuc)(const char *s);
+
+typedef struct {
+	char	*name;	/**< コマンド名 */
+	uint8_t	len;	/**< コマンド名の長さ(効率化のために使用) */
+	cmdFnuc	fn;		/**< コマンド処理関数 */
+	char	*info;	/**< 情報(ヘルプコマンド時に表示) */
+} Command;
+
+static void cmdC0(const char *s);
+static void cmdC1(const char *s);
+static void cmdC2(const char *s);
+static void cmdC3(const char *s);
+static void cmdC4(const char *s);
+static void cmdC5(const char *s);
+static void cmdHelp(const char *s);
+static void cmdVersion(const char *s);
+static void cmdSet(const char *s);
+static void cmdGet(const char *s);
+
+static const Command g_CommandTable[] = {
+	{ "C0",	2,	cmdC0,		"Get Info",					},
+	{ "C1",	2,	cmdC1,		"Set Display",				},
+	{ "C2",	2,	cmdC2,		"Set Brightness",			},
+	{ "C3",	2,	cmdC3,		"Set Chain Display",		},
+	{ "C4", 2,	cmdC4,		"Set Chain Brightness",		},
+	{ "C5",	2,	cmdC5,		"Update All Chain",			},
+	{ "-h",	2,	cmdHelp,	"Help",						},
+	{ "-v",	2,	cmdVersion,	"Version",					},
+	{ "s",	1,	cmdSet,		"Set Param : s <p1> <p2>",	},
+	{ "g",	1,	cmdGet,		"Set Param : s <p1> <p2>",	},
+};
+
+// TODO: armor.cに移動するべき。
+static uint8_t data_all[FINGER_7SEG_NUM*FINGER_NUM];	// ローカル変数にするとスタックオーバーフロー
 
 // ★注意★
 // DMA転送対象領域は内蔵RAMだけであり、const領域は転送できない。
@@ -82,7 +115,7 @@ static uint8_t test_data[] = {
 /**
  * コマンド受信処理
  */
-static void Command_onReceive(const uint8_t *command);
+static void Command_onReceive(const char *rxBuff);
 
 /**
  * ７SegArmorフレーム送信終了処理
@@ -140,107 +173,140 @@ void Command_proc(void)
 {
 	if (g_IsCommandReceived == TRUE) {
 		g_IsCommandReceived = FALSE;
-		Command_onReceive(g_CommandBuf);
+		Command_onReceive((char*)g_CommandBuf);
 		g_CommandBufIndex = 0;
 		memset(g_CommandBuf, 0, COMMAND_BUF_SIZE);
 		R_UART2_Receive(&g_CommandBuf[g_CommandBufIndex], 1);
 	}
 }
 
-static void Command_onReceive(const uint8_t *command)
+static void Command_onReceive(const char *rxBuff)
 {
-	int i;
-	uint8_t type;
-	uint8_t dipsw;
-	static uint8_t data_all[FINGER_7SEG_NUM*FINGER_NUM];	// ローカル変数にするとスタックオーバーフロー
-	
-	if (command[CMD_MAGIC_OFFSET] != 'S') {
-		return;
+	int cmdIndex;
+	for (cmdIndex = 0; cmdIndex < ARRAY_SIZE(g_CommandTable); cmdIndex++) {
+		const Command *p = &g_CommandTable[cmdIndex];
+		if (strncmp(p->name, rxBuff, p->len) == 0) {
+			p->fn(&rxBuff[p->len]);
+			break;
+		}
 	}
 	
-	type = command[CMD_TYPE_OFFSET] - '0';
-	switch (type) {
-	case ARMOR_CMD_GET_MODE:
-		// DIPSW[3:0] = [ P120 | P43 | P42 | P41 ]、負論理
-		dipsw = (((uint8_t)P12_bit.no0 << 3) |
-				 ((uint8_t)P4_bit.no3  << 2) |
-				 ((uint8_t)P4_bit.no2  << 1) |
-				 ((uint8_t)P4_bit.no1  << 0));
-		dipsw = ~dipsw & 0x0F;
-		PRINTF("Get Mode 0x%02x\n", dipsw);
-		break;
-		
-	case ARMOR_CMD_SET_DISPLAY:
-		// 型: [ 'S', '1', (0, 0), (0, 1), ..., (3, 7) ]
-		// 例: S1000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F202122232425262728292A2B2C2D2E2F303132333435363738393A3B3C3D3E3F\n
-		for (i = 0; i < FINGER_7SEG_NUM*FINGER_NUM; i++) {
-			data_all[i] = atoh(command[CMD_DATA_OFFSET + (i*2)], command[CMD_DATA_OFFSET + (i*2) + 1]);
-		}
-		
-		{
-			static const uint8_t num_to_pattern[] = {
-				0xfc, 0x60, 0xda, 0xf2, 0x66, 0xb6, 0xbe, 0xe4, 0xfe, 0xf6,
-			};
-			
-			uint32_t temp = g_CommandRecvCount;
-			for (i = 7; i > 0; i--) {
-				data_all[i] = num_to_pattern[temp % 10];
-				temp /= 10;
-				if (temp == 0) {
-					break;
-				}
-			}
-		}
-		
-		Finger_setDisplayAll(data_all);
-		g_CommandRecvCount++;
-		printf("%d\n", g_CommandRecvCount);
-		break;
-		
-	case ARMOR_CMD_SET_BRIGHTNESS:
-		// 型: [ 'S', '2', (0, 0), (0, 1), ..., (3, 7) ]
-		// 例: S2000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F202122232425262728292A2B2C2D2E2F303132333435363738393A3B3C3D3E3F\n
-		for (i = 0; i < FINGER_7SEG_NUM*FINGER_NUM; i++) {
-			data_all[i] = atoh(command[CMD_DATA_OFFSET + (i*2)], command[CMD_DATA_OFFSET + (i*2) + 1]);
-		}
-		Finger_setBrightnessAll(data_all);
-		g_CommandRecvCount++;
-		printf("%d\n", g_CommandRecvCount);
-		break;
-		
-	case 3:	// 連結表示設定コマンド
-		// TODO:
-		// 最終的にはシリアルから設定したデータを送るようにする。
-		// 開発中は固定データを送ってデバッグする。
-		{
-			// <通信プロトコル>
-			// [0    ]: 固定で1 (表示コマンドID)
-			// [1..32]: 7セグ表示データ(左上から右下に向かう順に指定)
-			Finger_setDisplayAll(&test_data[1]);
-					
-			// TODO: フラグを直接操作してはいけない。関数でラッピングするべき。
-			// そもそも1フレームしか用意しないじゃなかったっけ？
-			g_IsArmorFrameSending = TRUE;
-			g_ArmorFrameSendNum = 4;
-			g_ArmorFrameSendCount = 1;
-			
-			// 33バイトのDMA送信@1MHz≒270[us]
-			R_DMAC1_StartSend((uint8_t *)&test_data[g_ArmorFrameSendCount*33], 33);
-		}
-		break;
-		
-	case 4:	// 連結輝度設定コマンド
-		PRINTF("Not Implemented.\n");
-		break;
-		
-	case 5:
-		break;
-		
-	default:
+	if (cmdIndex == ARRAY_SIZE(g_CommandTable)) {
 		printf("Bad Type.\n");
-		break;
 	}
 }
+
+static void cmdC0(const char *s)
+{
+	uint8_t dipsw;
+	
+	// DIPSW[3:0] = [ P120 | P43 | P42 | P41 ]、負論理
+	dipsw = (((uint8_t)P12_bit.no0 << 3) |
+			 ((uint8_t)P4_bit.no3  << 2) |
+			 ((uint8_t)P4_bit.no2  << 1) |
+			 ((uint8_t)P4_bit.no1  << 0));
+	dipsw = ~dipsw & 0x0F;
+	PRINTF("Get Mode 0x%02x\n", dipsw);
+}
+
+static void cmdC1(const char *s)
+{
+	uint8_t i;
+	
+	// 型: [ 'S', '1', (0, 0), (0, 1), ..., (3, 7) ]
+	// 例: S1000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F202122232425262728292A2B2C2D2E2F303132333435363738393A3B3C3D3E3F\n
+	for (i = 0; i < FINGER_7SEG_NUM*FINGER_NUM; i++) {
+		data_all[i] = atoh(s[i*2], s[i*2 + 1]);
+	}
+	
+	{
+		static const uint8_t num_to_pattern[] = {
+			0xfc, 0x60, 0xda, 0xf2, 0x66, 0xb6, 0xbe, 0xe4, 0xfe, 0xf6,
+		};
+		
+		uint32_t temp = g_CommandRecvCount;
+		for (i = 7; i > 0; i--) {
+			data_all[i] = num_to_pattern[temp % 10];
+			temp /= 10;
+				if (temp == 0) {
+				break;
+			}
+		}
+	}
+		
+	Finger_setDisplayAll(data_all);
+	g_CommandRecvCount++;
+	printf("%d\n", g_CommandRecvCount);
+}
+
+static void cmdC2(const char *s)
+{
+	uint8_t i;
+	
+	// 型: [ 'S', '2', (0, 0), (0, 1), ..., (3, 7) ]
+	// 例: S2000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F202122232425262728292A2B2C2D2E2F303132333435363738393A3B3C3D3E3F\n
+	for (i = 0; i < FINGER_7SEG_NUM*FINGER_NUM; i++) {
+		data_all[i] = atoh(s[i*2], s[i*2 + 1]);
+	}
+	Finger_setBrightnessAll(data_all);
+	g_CommandRecvCount++;
+	printf("%d\n", g_CommandRecvCount);
+}
+
+static void cmdC3(const char *s)
+{
+	// 連結表示設定コマンド
+	// TODO:
+	// 最終的にはシリアルから設定したデータを送るようにする。
+	// 開発中は固定データを送ってデバッグする。
+
+	// <通信プロトコル>
+	// [0    ]: 固定で1 (表示コマンドID)
+	// [1..32]: 7セグ表示データ(左上から右下に向かう順に指定)
+	Finger_setDisplayAll(&test_data[1]);
+			
+	// TODO: フラグを直接操作してはいけない。関数でラッピングするべき。
+	// そもそも1フレームしか用意しないじゃなかったっけ？
+	g_IsArmorFrameSending = TRUE;
+	g_ArmorFrameSendNum = 4;
+	g_ArmorFrameSendCount = 1;
+	
+	// 33バイトのDMA送信@1MHz≒270[us]
+		R_DMAC1_StartSend((uint8_t *)&test_data[g_ArmorFrameSendCount*33], 33);
+}
+
+static void cmdC4(const char *s)
+{
+	// 連結輝度設定コマンド
+	PRINTF("Not Implemented.\n");
+}
+
+static void cmdC5(const char *s)
+{
+	PRINTF("Not Implemented.\n");
+}
+
+static void cmdHelp(const char *s)
+{
+	PRINTF("Not Implemented.\n");
+}
+
+static void cmdVersion(const char *s)
+{
+	PRINTF("Not Implemented.\n");
+}
+
+static void cmdSet(const char *s)
+{
+	PRINTF("Not Implemented.\n");
+}
+
+static void cmdGet(const char *s)
+{
+	PRINTF("Not Implemented.\n");
+}
+
+/************************************************************/
 
 void Command_receivedHandler(void)
 {

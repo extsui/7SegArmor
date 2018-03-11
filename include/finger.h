@@ -19,14 +19,6 @@
 void Finger_init(void);
 
 /**
- * 7SegFinger周期処理
- *
- * タイマモジュールから10ms周期で呼び出すこと。
- * スイッチ監視、デモ処理などを行う。
- */
-void Finger_cycle(void);
-
-/**
  * 7SegFinger全表示設定
  *
  * FINGER_7SEG_NUM*FINGER_NUM分の全表示データを設定する。
@@ -35,6 +27,13 @@ void Finger_cycle(void);
  */
 void Finger_setDisplayAll(const uint8_t *displayAll);
 
+/**
+ * 7SegFinger全輝度設定
+ *
+ * FINGER_7SEG_NUM*FINGER_NUM分の全輝度データを設定する。
+ *
+ * @param brightnessAllData [in] 全輝度データ。要素数FINGER_7SEG_NUM*FINGER_NUMの配列。
+ */
 void Finger_setBrightnessAll(const uint8_t *brightnessAll);
 
 /**
