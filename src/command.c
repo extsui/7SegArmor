@@ -38,9 +38,43 @@ static uint32_t g_CommandRecvCount = 0;
 // 1コマンド受信完了フラグ
 static BOOL g_IsCommandReceived = FALSE;
 
-/** マスタ送信完了フラグ */
-/** TODO: armor.cに移動すること */
-static BOOL g_IsMasterSendend = FALSE;
+/** 7SegArmorフレーム送信中か否か */
+/** ※DMA送信ではなく複数回のフレーム送信全体を指す */
+static BOOL g_IsArmorFrameSending = FALSE;
+
+/** 7SegArmorフレーム送信数 */
+static uint8_t g_ArmorFrameSendNum = 0;
+
+/** 7SegArmorフレーム送信カウンタ */
+static uint8_t g_ArmorFrameSendCount = 0;
+
+// ★注意★
+// DMA転送対象領域は内蔵RAMだけであり、const領域は転送できない。
+static uint8_t test_data[] = {
+	1,
+	PATTERN_7SEG_0, PATTERN_7SEG_1, PATTERN_7SEG_2, PATTERN_7SEG_3, PATTERN_7SEG_4, PATTERN_7SEG_5, PATTERN_7SEG_6, PATTERN_7SEG_7,
+	PATTERN_7SEG_8, PATTERN_7SEG_9, PATTERN_7SEG_0, PATTERN_7SEG_1, PATTERN_7SEG_2, PATTERN_7SEG_3, PATTERN_7SEG_4, PATTERN_7SEG_5,
+	PATTERN_7SEG_6, PATTERN_7SEG_7, PATTERN_7SEG_8, PATTERN_7SEG_9, PATTERN_7SEG_0, PATTERN_7SEG_1, PATTERN_7SEG_2, PATTERN_7SEG_3,
+	PATTERN_7SEG_4, PATTERN_7SEG_5, PATTERN_7SEG_6, PATTERN_7SEG_7, PATTERN_7SEG_8, PATTERN_7SEG_9, PATTERN_7SEG_0, PATTERN_7SEG_1,
+	
+	1,
+	PATTERN_7SEG_2, PATTERN_7SEG_3, PATTERN_7SEG_4, PATTERN_7SEG_5, PATTERN_7SEG_6, PATTERN_7SEG_7, PATTERN_7SEG_8, PATTERN_7SEG_9,
+	PATTERN_7SEG_0, PATTERN_7SEG_1, PATTERN_7SEG_2, PATTERN_7SEG_3, PATTERN_7SEG_4, PATTERN_7SEG_5, PATTERN_7SEG_6, PATTERN_7SEG_7,
+	PATTERN_7SEG_8, PATTERN_7SEG_9, PATTERN_7SEG_0, PATTERN_7SEG_1, PATTERN_7SEG_2, PATTERN_7SEG_3, PATTERN_7SEG_4, PATTERN_7SEG_5,
+	PATTERN_7SEG_6, PATTERN_7SEG_7, PATTERN_7SEG_8, PATTERN_7SEG_9, PATTERN_7SEG_0, PATTERN_7SEG_1, PATTERN_7SEG_2, PATTERN_7SEG_3,
+	
+	1,
+	PATTERN_7SEG_4, PATTERN_7SEG_5, PATTERN_7SEG_6, PATTERN_7SEG_7, PATTERN_7SEG_8, PATTERN_7SEG_9, PATTERN_7SEG_0, PATTERN_7SEG_1,
+	PATTERN_7SEG_2, PATTERN_7SEG_3, PATTERN_7SEG_4, PATTERN_7SEG_5, PATTERN_7SEG_6, PATTERN_7SEG_7, PATTERN_7SEG_8, PATTERN_7SEG_9,
+	PATTERN_7SEG_0, PATTERN_7SEG_1, PATTERN_7SEG_2, PATTERN_7SEG_3, PATTERN_7SEG_4, PATTERN_7SEG_5, PATTERN_7SEG_6, PATTERN_7SEG_7,
+	PATTERN_7SEG_8, PATTERN_7SEG_9, PATTERN_7SEG_0, PATTERN_7SEG_1, PATTERN_7SEG_2, PATTERN_7SEG_3, PATTERN_7SEG_4, PATTERN_7SEG_5,
+
+	1,
+	PATTERN_7SEG_6, PATTERN_7SEG_7, PATTERN_7SEG_8, PATTERN_7SEG_9, PATTERN_7SEG_0, PATTERN_7SEG_1, PATTERN_7SEG_2, PATTERN_7SEG_3,
+	PATTERN_7SEG_4, PATTERN_7SEG_5, PATTERN_7SEG_6, PATTERN_7SEG_7, PATTERN_7SEG_8, PATTERN_7SEG_9, PATTERN_7SEG_0, PATTERN_7SEG_1,
+	PATTERN_7SEG_2, PATTERN_7SEG_3, PATTERN_7SEG_4, PATTERN_7SEG_5, PATTERN_7SEG_6, PATTERN_7SEG_7, PATTERN_7SEG_8, PATTERN_7SEG_9,
+	PATTERN_7SEG_0, PATTERN_7SEG_1, PATTERN_7SEG_2, PATTERN_7SEG_3, PATTERN_7SEG_4, PATTERN_7SEG_5, PATTERN_7SEG_6, PATTERN_7SEG_7,
+};
 
 /************************************************************
  *  prototype
@@ -49,6 +83,12 @@ static BOOL g_IsMasterSendend = FALSE;
  * コマンド受信処理
  */
 static void Command_onReceive(const uint8_t *command);
+
+/**
+ * ７SegArmorフレーム送信終了処理
+ * @note DMA送信処理が全部終了したのでLATCH↑↓処理を実施する。
+ */
+static void armorFrameSendendProc(void);
 
 /**
  * 2文字を16進数1バイトに変換する。
@@ -105,13 +145,6 @@ void Command_proc(void)
 		memset(g_CommandBuf, 0, COMMAND_BUF_SIZE);
 		R_UART2_Receive(&g_CommandBuf[g_CommandBufIndex], 1);
 	}
-}
-
-static uint16_t measure_us = 0;
-// タイムアウトテスト関数
-static void timeout_test(void)
-{
-	measure_us = R_TAU0_StopMeasure();
 }
 
 static void Command_onReceive(const uint8_t *command)
@@ -183,62 +216,16 @@ static void Command_onReceive(const uint8_t *command)
 			// <通信プロトコル>
 			// [0    ]: 固定で1 (表示コマンドID)
 			// [1..32]: 7セグ表示データ(左上から右下に向かう順に指定)
-			// 
-			// ★注意★
-			// DMA転送対象領域は内蔵RAMだけであり、const領域は転送できない。
-			static uint8_t test_data[] = {
-				1,
-				PATTERN_7SEG_0, PATTERN_7SEG_1, PATTERN_7SEG_2, PATTERN_7SEG_3, PATTERN_7SEG_4, PATTERN_7SEG_5, PATTERN_7SEG_6, PATTERN_7SEG_7,
-				PATTERN_7SEG_8, PATTERN_7SEG_9, PATTERN_7SEG_0, PATTERN_7SEG_1, PATTERN_7SEG_2, PATTERN_7SEG_3, PATTERN_7SEG_4, PATTERN_7SEG_5,
-				PATTERN_7SEG_6, PATTERN_7SEG_7, PATTERN_7SEG_8, PATTERN_7SEG_9, PATTERN_7SEG_0, PATTERN_7SEG_1, PATTERN_7SEG_2, PATTERN_7SEG_3,
-				PATTERN_7SEG_4, PATTERN_7SEG_5, PATTERN_7SEG_6, PATTERN_7SEG_7, PATTERN_7SEG_8, PATTERN_7SEG_9, PATTERN_7SEG_0, PATTERN_7SEG_1,
-				
-				1,
-				PATTERN_7SEG_2, PATTERN_7SEG_3, PATTERN_7SEG_4, PATTERN_7SEG_5, PATTERN_7SEG_6, PATTERN_7SEG_7, PATTERN_7SEG_8, PATTERN_7SEG_9,
-				PATTERN_7SEG_0, PATTERN_7SEG_1, PATTERN_7SEG_2, PATTERN_7SEG_3, PATTERN_7SEG_4, PATTERN_7SEG_5, PATTERN_7SEG_6, PATTERN_7SEG_7,
-				PATTERN_7SEG_8, PATTERN_7SEG_9, PATTERN_7SEG_0, PATTERN_7SEG_1, PATTERN_7SEG_2, PATTERN_7SEG_3, PATTERN_7SEG_4, PATTERN_7SEG_5,
-				PATTERN_7SEG_6, PATTERN_7SEG_7, PATTERN_7SEG_8, PATTERN_7SEG_9, PATTERN_7SEG_0, PATTERN_7SEG_1, PATTERN_7SEG_2, PATTERN_7SEG_3,
-				
-				1,
-				PATTERN_7SEG_4, PATTERN_7SEG_5, PATTERN_7SEG_6, PATTERN_7SEG_7, PATTERN_7SEG_8, PATTERN_7SEG_9, PATTERN_7SEG_0, PATTERN_7SEG_1,
-				PATTERN_7SEG_2, PATTERN_7SEG_3, PATTERN_7SEG_4, PATTERN_7SEG_5, PATTERN_7SEG_6, PATTERN_7SEG_7, PATTERN_7SEG_8, PATTERN_7SEG_9,
-				PATTERN_7SEG_0, PATTERN_7SEG_1, PATTERN_7SEG_2, PATTERN_7SEG_3, PATTERN_7SEG_4, PATTERN_7SEG_5, PATTERN_7SEG_6, PATTERN_7SEG_7,
-				PATTERN_7SEG_8, PATTERN_7SEG_9, PATTERN_7SEG_0, PATTERN_7SEG_1, PATTERN_7SEG_2, PATTERN_7SEG_3, PATTERN_7SEG_4, PATTERN_7SEG_5,
-			};
-			
-			int i;
-			
 			Finger_setDisplayAll(&test_data[1]);
+					
+			// TODO: フラグを直接操作してはいけない。関数でラッピングするべき。
+			// そもそも1フレームしか用意しないじゃなかったっけ？
+			g_IsArmorFrameSending = TRUE;
+			g_ArmorFrameSendNum = 4;
+			g_ArmorFrameSendCount = 1;
 			
-			for (i = 1; i < 3; i++) {
-				R_DMAC1_StartSend((uint8_t *)&test_data[i * 33], 33);
-				while (g_IsMasterSendend == FALSE) {
-					NOP();
-				}
-				g_IsMasterSendend = FALSE;
-				
-				// [DMA間遅延時間]
-				// 下流機器のDMA完了割り込みの処理時間分待つ。
-				// ・OK：20us
-				// ・OK：15us
-				// ・NG：10us
-				//   ⇒遅延時間は、20[us] 見ておけば問題ないと判断。
-				R_TAU0_BusyWait(20);
-			}
-			
-			// [LATCH更新遅延時間]
-			// DMA転送1回分+αの時間を確保する必要がある。
-			// ・DMA1回理論値：33*8[bit] / 1[Mbps] = 264[us]
-			// ・DMA1回測定値：267～268[us]
-			//   ⇒遅延時間は、300[us] 見ておけば問題ないと判断。
-			R_TAU0_BusyWait(300);
-			
-			// 最速だとINTC割り込みを取りこぼすので遅延が必要。
-			P13_bit.no0 = 1;
-			PULSE_DELAY();
-			P13_bit.no0 = 0;
-			
-			PRINTF("Sendend.\n");
+			// 33バイトのDMA送信@1MHz≒270[us]
+			R_DMAC1_StartSend((uint8_t *)&test_data[g_ArmorFrameSendCount*33], 33);
 		}
 		break;
 		
@@ -247,9 +234,6 @@ static void Command_onReceive(const uint8_t *command)
 		break;
 		
 	case 5:
-		PRINTF("%d[us] (1回遅れであることに注意)\n", measure_us);
-		R_TAU0_StartMeasure();
-		R_TAU0_SetTimeout(300, timeout_test);
 		break;
 		
 	default:
@@ -271,7 +255,40 @@ void Command_receivedHandler(void)
 
 void Command_masterSendendHandler(void)
 {
-	g_IsMasterSendend = TRUE;
+	g_ArmorFrameSendCount++;
+		
+	// フレーム送信中
+	if (g_ArmorFrameSendCount <= g_ArmorFrameSendNum) {
+		// [DMA間遅延時間]
+		// 下流機器のDMA完了割り込みの処理時間分待つ。
+		// ・OK：20us
+		// ・OK：15us
+		// ・NG：10us
+		//   ⇒遅延時間は、20[us] 見ておけば問題ないと判断。
+		R_TAU0_BusyWait(20);
+		
+		// 次のフレーム送信
+		R_DMAC1_StartSend((uint8_t *)&test_data[g_ArmorFrameSendCount*33], 33);
+		
+	// 最終フレーム送信後
+	} else {
+		// [LATCH更新遅延時間]
+		// DMA転送1回分+αの時間を確保する必要がある。
+		// ・DMA1回理論値：33*8[bit] / 1[Mbps] = 264[us]
+		// ・DMA1回測定値：267～268[us]
+		//   ⇒遅延時間は、300[us] 見ておけば問題ないと判断。
+		R_TAU0_SetTimeout(300, armorFrameSendendProc);
+	}
+}
+
+static void armorFrameSendendProc(void)
+{
+	// 最速だとINTC割り込みを取りこぼすので遅延が必要。
+	P13_bit.no0 = 1;
+	PULSE_DELAY();
+	P13_bit.no0 = 0;
+	
+	g_IsArmorFrameSending = FALSE;
 }
 
 /************************************************************
