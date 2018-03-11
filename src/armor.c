@@ -15,6 +15,8 @@
 /************************************************************
  *  define
  ************************************************************/
+/** 7SEG FINGER更新周期(ms) */
+#define FINGER_UPDATE_INTERVAL_MS	(16)
 
 /************************************************************
  *  global variables
@@ -167,6 +169,11 @@ void Armor_latchHandler(void)
  ************************************************************/
 static void _1msCyclicProc(void)
 {
+	static uint8_t count1ms = 0;
+	count1ms++;
+	
+	Command_proc();
+	
 	// LATCHトリガがかかったなら今のLATCHバッファの内容で
 	// 7SegFingerの表示を更新する。
 	// TODO: LATCHバッファのデータチェックが必要
@@ -193,22 +200,32 @@ static void _1msCyclicProc(void)
 		R_DMAC0_StartReceive(g_MasterReceiveBuffer, 33);
 	}
 	
-	Command_proc();
-	Finger_update();
+	/*
+	 * 7SegArmorが7SegFinger4個を更新するのに約1.6msかかる。
+	 * この周期以上に設定する必要がある。
+	 * そもそも7SegFinger自身の更新に2ms*8個=16msかかるので
+	 * この周期と合わせておく。
+	 */
+	if (count1ms >= FINGER_UPDATE_INTERVAL_MS) {
+		Finger_update();
+	}
 }
 
 static void _10msCyclicProc(void)
 {
+	static uint8_t count10ms = 0;
+	count10ms++;
+	
 	/* NOP */
 }
 
 static void _100msCyclicProc(void)
 {
-	static volatile uint8_t count = 0;
+	static uint8_t count100ms = 0;	
+	count100ms++;
 	
-	count++;
-	if (count >= 5) {
-		count = 0;
+	if (count100ms >= 5) {
+		count100ms = 0;
 		P3_bit.no0 ^= 1;
 	}
 }
