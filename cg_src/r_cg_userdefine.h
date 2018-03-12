@@ -32,9 +32,10 @@
 /***********************************************************************************************************************
 User definitions
 ***********************************************************************************************************************/
+
 /* Start user code for function. Do not edit comment generated here */
 #include <stddef.h>	// NULL
-#include <stdio.h>	// printf()
+#include "debug.h"	// DPRINTF()
 
 typedef enum {
 	TRUE = 1,
@@ -42,8 +43,6 @@ typedef enum {
 } BOOL;
 
 #define ARRAY_SIZE(x)	(sizeof(x)/sizeof(x[0]))
-
-#define PRINTF(...)  printf(__VA_ARGS__)
 
 // クロック周波数(Hz)
 // 変更時はこの値を変えること。
@@ -59,7 +58,7 @@ typedef enum {
 #define ASSERT(x)												\
 	do {														\
 		if (!(x)) {												\
-			PRINTF("Assertion failed: %s, file %s, line %d\n",	\
+			DPRINTF("Assertion failed: %s, file %s, line %d\n",	\
 					#x, __FILE__, __LINE__);					\
 			while (1);	/* WDT待ち */							\
 		}														\

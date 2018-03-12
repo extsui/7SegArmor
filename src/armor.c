@@ -183,14 +183,14 @@ static void _1msCyclicProc(void)
 		if (g_IsUpdatableByLatch == TRUE) {
 			g_IsUpdatableByLatch = FALSE;
 		} else {
-			PRINTF("Error: 下流受信完了前にLATCHトリガが来た\n");
+			DPRINTF("Error: 下流受信完了前にLATCHトリガが来た\n");
 		}
 		
 		if (g_LatchBuffer[0] == 1) {
 			Finger_setDisplayAll(&g_LatchBuffer[1]);
-			PRINTF("Slave Update.\n");
+			DPRINTF("Slave Update.\n");
 		} else {
-			PRINTF("Bad Command.\n");
+			DPRINTF("Bad Command.\n");
 		}
 		
 		memset(g_MasterReceiveBuffer, 0, sizeof(g_MasterReceiveBuffer));

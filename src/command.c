@@ -190,9 +190,16 @@ static void Command_onReceive(const char *rxBuff)
 			break;
 		}
 	}
-	
+
+	// 一致しなかった場合
 	if (cmdIndex == ARRAY_SIZE(g_CommandTable)) {
-		printf("Bad Type.\n");
+		// 空行ならプロンプト'>'を表示
+		if (rxBuff[0] == '\n') {
+			DPRINTF(">");
+		// 空行でないなら誤ったコマンドという旨を表示
+		} else {
+			DPRINTF("Bad Type.\n");
+		}
 	}
 }
 
@@ -206,7 +213,7 @@ static void cmdC0(const char *s)
 			 ((uint8_t)P4_bit.no2  << 1) |
 			 ((uint8_t)P4_bit.no1  << 0));
 	dipsw = ~dipsw & 0x0F;
-	PRINTF("Get Mode 0x%02x\n", dipsw);
+	DPRINTF("Get Mode 0x%02x\n", dipsw);
 }
 
 static void cmdC1(const char *s)
@@ -236,7 +243,7 @@ static void cmdC1(const char *s)
 		
 	Finger_setDisplayAll(data_all);
 	g_CommandRecvCount++;
-	printf("%d\n", g_CommandRecvCount);
+	DPRINTF("%d\n", g_CommandRecvCount);
 }
 
 static void cmdC2(const char *s)
@@ -250,7 +257,7 @@ static void cmdC2(const char *s)
 	}
 	Finger_setBrightnessAll(data_all);
 	g_CommandRecvCount++;
-	printf("%d\n", g_CommandRecvCount);
+	DPRINTF("%d\n", g_CommandRecvCount);
 }
 
 static void cmdC3(const char *s)
@@ -278,12 +285,12 @@ static void cmdC3(const char *s)
 static void cmdC4(const char *s)
 {
 	// 連結輝度設定コマンド
-	PRINTF("Not Implemented.\n");
+	DPRINTF("Not Implemented.\n");
 }
 
 static void cmdC5(const char *s)
 {
-	PRINTF("Not Implemented.\n");
+	DPRINTF("Not Implemented.\n");
 }
 
 static void cmdHelp(const char *s)
@@ -291,29 +298,23 @@ static void cmdHelp(const char *s)
 	int i;
 	for (i = 0; i < ARRAY_SIZE(g_CommandTable); i++) {
 		const Command *p = &g_CommandTable[i];
-		PRINTF("%s : %s\n", p->name, p->info);
-		// TODO: PRINTFをリングバッファ化しなければ未来はない。
-		// リングバッファ操作時はDI()->EI()を徹底すること。
-		// ただし、割り込みハンドラから呼び出すときは、
-		// EI()しても多重割り込みがなければ問題はない。
-		// WORKAROUND: ↓ものすごい場当たり対処。
-		R_TAU0_BusyWait(10000);
+		DPRINTF("%s : %s\n", p->name, p->info);
 	}
 }
 
 static void cmdVersion(const char *s)
 {
-	PRINTF("7SegArmor ver.0.1\n");
+	DPRINTF("7SegArmor ver.0.1\n");
 }
 
 static void cmdSet(const char *s)
 {
-	PRINTF("Not Implemented.\n");
+	DPRINTF("Not Implemented.\n");
 }
 
 static void cmdGet(const char *s)
 {
-	PRINTF("Not Implemented.\n");
+	DPRINTF("Not Implemented.\n");
 }
 
 /************************************************************/

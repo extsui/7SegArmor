@@ -34,6 +34,7 @@ Includes
 /* Start user code for include. Do not edit comment generated here */
 #include "command.h" /* Command_receivedHandler() */
 #include "finger.h" /* Finger_onSendEndHandler() */
+#include "debug.h" /* Debug_charSendendHandler() */
 /* End user code. Do not edit comment generated here */
 #include "r_cg_userdefine.h"
 
@@ -76,15 +77,6 @@ extern volatile uint8_t * gp_uart2_rx_address;         /* uart2 receive buffer a
 extern volatile uint16_t  g_uart2_rx_count;            /* uart2 receive data number */
 extern volatile uint16_t  g_uart2_rx_length;           /* uart2 receive data length */
 /* Start user code for global. Do not edit comment generated here */
-
-#define UART_TX_BUF_SIZE	(256)
-
-static uint8_t g_UartTxBuf[UART_TX_BUF_SIZE];
-static uint8_t g_UartTxBufWp = 0;
-
-// シリアル出力送信許可フラグ
-volatile BOOL g_IsUartSendable = TRUE;
-
 /* End user code. Do not edit comment generated here */
 
 /***********************************************************************************************************************
@@ -329,7 +321,7 @@ static void r_uart2_callback_softwareoverrun(uint16_t rx_data)
 static void r_uart2_callback_sendend(void)
 {
     /* Start user code. Do not edit comment generated here */
-	g_IsUartSendable = TRUE;
+	Debug_charSendendHandler();
     /* End user code. Do not edit comment generated here */
 }
 
@@ -348,21 +340,4 @@ static void r_uart2_callback_error(uint8_t err_type)
 }
 
 /* Start user code for adding. Do not edit comment generated here */
-
-/**
- * printf()の出力先を変更するために再定義する。
- */
-int putchar(int c)
-{
-	g_UartTxBuf[g_UartTxBufWp++] = (uint8_t)c;
-	if (c == '\n') {
-		if (g_IsUartSendable) {
-			g_IsUartSendable = FALSE;
-			R_UART2_Send(g_UartTxBuf, g_UartTxBufWp);
-		}
-		g_UartTxBufWp = 0;
-	}
-    return c;
-}
-
 /* End user code. Do not edit comment generated here */

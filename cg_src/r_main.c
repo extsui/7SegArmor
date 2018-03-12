@@ -71,9 +71,9 @@ void main(void)
 {
     R_MAIN_UserInit();
     /* Start user code. Do not edit comment generated here */
-	printf("7SegArmor started.\n");
+	DPRINTF("7SegArmor started.\n");
 	Armor_mainLoop();
-	printf("7SegArmor exit.\n");
+	DPRINTF("7SegArmor exit.\n");
 	while (1U);
     /* End user code. Do not edit comment generated here */
 }

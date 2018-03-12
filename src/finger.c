@@ -3,7 +3,6 @@
 #include "r_cg_serial.h"
 #include "finger.h"
 #include <string.h> /* memcpy() */
-#include <stdio.h> /* printf() */
 
 /************************************************************
  *
@@ -227,7 +226,7 @@ static void Frame_beginSend(void)
 	
 	} else {
 		/* ‚±‚±‚É‚Í—ˆ‚È‚¢‚Í‚¸ */
-		printf("#");
+		ASSERT(0);
 	}
 }
 
