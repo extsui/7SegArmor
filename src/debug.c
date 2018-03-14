@@ -4,6 +4,7 @@
 #include "debug.h"
 #include <stdio.h>
 #include <stdarg.h>
+#include <string.h>
 
 /************************************************************
  *  define
@@ -11,7 +12,7 @@
 // FIFOサイズ
 #define FIFO_SIZE	(256)
 
-/** FIFO構造体 */
+/** FIFO構造体(固定サイズFIFO) */
 typedef struct {
   int readPos;			/**< 読み込み位置 */
   int writePos;			/**< 書き込み位置 */
@@ -33,11 +34,10 @@ static BOOL g_IsTxBusy;
 /************************************************************
  *  prototype
  ************************************************************/
-#define FIFO_NEXT(x)		(((x) + 1) % FIFO_SIZE)
-#define FIFO_COUNT(fifo)	(((fifo)->writePos - (fifo)->readPos) % FIFO_SIZE)
-#define FIFO_IS_EMPTY(fifo)	((fifo)->writePos == (fifo)->readPos)
-#define FIFO_IS_FULL(fifo)	((FIFO_COUNT((fifo)) - 1) == FIFO_SIZE)
-
+static __inline int Fifo_next(int x);
+static __inline int Fifo_count(const Fifo *fifo);
+static __inline int Fifo_is_empty(const Fifo *fifo);
+static __inline int Fifo_is_full(const Fifo *fifo);
 static void Fifo_init(Fifo *fifo);
 static void Fifo_put(Fifo *fifo, uint8_t data);
 static uint8_t Fifo_get(Fifo *fifo);
@@ -80,7 +80,7 @@ void dprint(const char *fmt, ...)
 	
 	// FIFOへの格納
     for (i = 0; i < len; i++) {
-    	if (FIFO_IS_FULL(&g_TxFifo)) {
+    	if (Fifo_is_full(&g_TxFifo)) {
     		// 出し過ぎエラーの場合はここに来る。
 			// エラーが起きたことをマークする。
 			g_TxFifo.buf[g_TxFifo.writePos-1] = '$';
@@ -91,10 +91,14 @@ void dprint(const char *fmt, ...)
 	
 	// 送信開始していない場合は送信開始
 	if (g_IsTxBusy == FALSE) {
-		uint8_t c;
-		c = Fifo_get(&g_TxFifo);
-		g_IsTxBusy = TRUE;
-		R_UART2_Send(&c, 1);
+		// FIFOが空で文字列""が指定された場合は
+		// FIFOに何も格納されずに来るので確認が必要。
+		if (!Fifo_is_empty(&g_TxFifo)) {
+			uint8_t c;
+			c = Fifo_get(&g_TxFifo);
+			g_IsTxBusy = TRUE;
+			R_UART2_Send(&c, 1);
+		}
 	}
 	
 	EI();
@@ -102,7 +106,7 @@ void dprint(const char *fmt, ...)
 
 void Debug_charSendendHandler(void)
 {
-	if (FIFO_IS_EMPTY(&g_TxFifo)) {
+	if (Fifo_is_empty(&g_TxFifo)) {
 		g_IsTxBusy = FALSE;
 	} else {
 		uint8_t c = Fifo_get(&g_TxFifo);
@@ -113,21 +117,192 @@ void Debug_charSendendHandler(void)
 /************************************************************
  *  private functions
  ************************************************************/
+static __inline int Fifo_next(int x)
+{
+	return (x + 1) % FIFO_SIZE;
+}
+
+static __inline int Fifo_count(const Fifo *fifo)
+{
+	return (fifo->writePos - fifo->readPos + FIFO_SIZE) % FIFO_SIZE;
+}
+
+static __inline int Fifo_is_empty(const Fifo *fifo)
+{
+	return fifo->writePos == fifo->readPos;
+}
+
+static __inline int Fifo_is_full(const Fifo *fifo)
+{
+	// 以下の実装でも実現できるし、この方が早いけど、
+	// Fifo_count()未使用警告を抑制したいので、
+	// Fifo_count()を使用する実装とする。
+	//   return Fifo_next(fifo->writePos) == fifo->readPos;
+	return Fifo_count(fifo) == FIFO_SIZE - 1;
+}
+
 static void Fifo_init(Fifo *fifo)
 {
 	fifo->readPos = 0;
 	fifo->writePos = 0;
+	memset(fifo->buf, 0, FIFO_SIZE);
 }
 
+/**
+ * FIFO書き出し
+ * @note エラーチェックはしないので、
+ * @note 事前にフルでないことを確認すること。
+ */
 static void Fifo_put(Fifo *fifo, uint8_t data)
 {
 	fifo->buf[fifo->writePos] = data;
-	fifo->writePos = FIFO_NEXT(fifo->writePos);
+	fifo->writePos = Fifo_next(fifo->writePos);
 }
 
+/**
+ * FIFO読み込み
+ * @note エラーチェックはしないので、
+ * @note 事前に空でないことを確認すること。
+ */
 static uint8_t Fifo_get(Fifo *fifo)
 {
 	uint8_t data = fifo->buf[fifo->readPos];
-	fifo->readPos = FIFO_NEXT(fifo->readPos);
+	fifo->readPos = Fifo_next(fifo->readPos);
 	return data;
 }
+
+/************************************************************
+ *  単体テスト
+ ************************************************************/
+#if 0
+
+void test_Fifo(void)
+{
+	static Fifo testFifo;
+
+	//////////////////////////////////////////////////
+	
+	// 次(元：0)
+	ASSERT(Fifo_next(0) == 1);
+	
+	// 次(元：FIFO_SIZE - 1)
+	ASSERT(Fifo_next(FIFO_SIZE - 1) == 0);
+	
+	//////////////////////////////////////////////////
+	
+	// サイズ(0)
+	Fifo_init(&testFifo);
+	testFifo.readPos = 0;
+	testFifo.writePos = 0;
+	ASSERT(Fifo_count(&testFifo) == 0);
+	
+	// サイズ(上限)
+	Fifo_init(&testFifo);
+	testFifo.readPos = 0;
+	testFifo.writePos = FIFO_SIZE - 1;
+	ASSERT(Fifo_count(&testFifo) == FIFO_SIZE - 1);
+	
+	// サイズ(周回無し、中間値)
+	Fifo_init(&testFifo);
+	testFifo.readPos = 10;
+	testFifo.writePos = 20;
+	ASSERT(Fifo_count(&testFifo) == 10);
+	
+	// サイズ(周回有り、中間値)
+	Fifo_init(&testFifo);
+	testFifo.readPos = FIFO_SIZE - 1 - 5;
+	testFifo.writePos = 4;
+	ASSERT(Fifo_count(&testFifo) == 10);
+	
+	// サイズ(周回有り、上限)
+	Fifo_init(&testFifo);
+	testFifo.readPos = 0;
+	testFifo.writePos = FIFO_SIZE - 1;
+	ASSERT(Fifo_count(&testFifo) == FIFO_SIZE - 1);
+
+	//////////////////////////////////////////////////
+	
+	// 空(初期位置)
+	Fifo_init(&testFifo);
+	testFifo.readPos = 0;
+	testFifo.writePos = 0;
+	ASSERT(Fifo_is_empty(&testFifo) != 0);
+	
+	// 空(上限)
+	Fifo_init(&testFifo);
+	testFifo.readPos = FIFO_SIZE - 1;
+	testFifo.writePos = FIFO_SIZE - 1;
+	ASSERT(Fifo_is_empty(&testFifo) != 0);
+	
+	// 空でない
+	Fifo_init(&testFifo);
+	testFifo.readPos = 0;
+	testFifo.writePos = 1;
+	ASSERT(Fifo_is_empty(&testFifo) == 0);
+	
+	//////////////////////////////////////////////////
+	
+	// フルでない(初期状態)
+	Fifo_init(&testFifo);
+	testFifo.readPos = 0;
+	testFifo.writePos = 0;
+	ASSERT(Fifo_is_full(&testFifo) == 0);
+	
+	// フル(readPos初期位置)
+	Fifo_init(&testFifo);
+	testFifo.readPos = 0;
+	testFifo.writePos = FIFO_SIZE - 1;
+	ASSERT(Fifo_is_full(&testFifo) != 0);
+	
+	// フル(readPos非初期位置)
+	Fifo_init(&testFifo);
+	testFifo.readPos = 1;
+	testFifo.writePos = 0;
+	ASSERT(Fifo_is_full(&testFifo) != 0);
+	
+	//////////////////////////////////////////////////
+	
+	// 書き出し(先頭)
+	Fifo_init(&testFifo);
+	testFifo.readPos = 0;
+	testFifo.writePos = 0;
+	Fifo_put(&testFifo, 0x55);
+	ASSERT(testFifo.readPos == 0);
+	ASSERT(testFifo.writePos == 1);
+	ASSERT(testFifo.buf[0] == 0x55);
+	
+	// 書き出し(末尾)
+	Fifo_init(&testFifo);
+	testFifo.readPos = 1;	// 0の場合FIFOが壊れるのでダメ
+	testFifo.writePos = FIFO_SIZE - 1;
+	Fifo_put(&testFifo, 0x55);
+	ASSERT(testFifo.readPos == 1);
+	ASSERT(testFifo.writePos == 0);
+	ASSERT(testFifo.buf[FIFO_SIZE - 1] == 0x55);
+	
+	//////////////////////////////////////////////////
+	
+	// 読み込み(先頭)
+	Fifo_init(&testFifo);
+	testFifo.readPos = 0;
+	testFifo.writePos = 1;
+	testFifo.buf[0] = 0x55;
+	ASSERT(0x55 == Fifo_get(&testFifo));
+	ASSERT(testFifo.readPos == 1);
+	ASSERT(testFifo.writePos == 1);
+	
+	// 読み込み(末尾)
+	Fifo_init(&testFifo);
+	testFifo.readPos = FIFO_SIZE - 1;
+	testFifo.writePos = 0;
+	testFifo.buf[FIFO_SIZE - 1] = 0x55;
+	ASSERT(0x55 == Fifo_get(&testFifo));
+	ASSERT(testFifo.readPos == 0);
+	ASSERT(testFifo.writePos == 0);
+	
+	NOP();	// break用
+	
+	while (1);
+}
+
+#endif

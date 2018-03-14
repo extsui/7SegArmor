@@ -45,6 +45,7 @@ Includes
 #include "command.h"
 #include "finger.h"
 #include "armor.h"
+#include "debug.h"
 /* End user code. Do not edit comment generated here */
 #include "r_cg_userdefine.h"
 
@@ -87,6 +88,7 @@ void main(void)
 void R_MAIN_UserInit(void)
 {
     /* Start user code. Do not edit comment generated here */
+	Debug_init();
 	Command_init();
 	Finger_init();
 	Armor_init();
