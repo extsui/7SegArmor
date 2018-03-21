@@ -15,27 +15,10 @@
 /************************************************************
  *  define
  ************************************************************/
-/** 7SEG FINGER更新周期(ms) */
-#define FINGER_UPDATE_INTERVAL_MS	(16)
 
 /************************************************************
  *  global variables
  ************************************************************/
-/** システムカウンタ(1msカウントアップ) */
-static uint32_t g_SysTick = 0;
-
-/** 1ms処理回数(デバッグ用。システムカウンタとの差が1ms周期に間に合わなかった回数) */
-static uint32_t g_1msCyclicProcCount = 0;
-
-/** 1ms経過したか */
-static BOOL g_Is1msElapsed = FALSE;
-
-/** 10ms経過したか */
-static BOOL g_Is10msElapsed = FALSE;
-
-/** 100ms経過したか */
-static BOOL g_Is100msElapsed = FALSE;
-
 /** 上流受信バッファ */
 static uint8_t g_MasterReceiveBuffer[33];
 
@@ -57,14 +40,6 @@ static BOOL g_IsUpdatableByLatch = FALSE;
 /************************************************************
  *  prototype
  ************************************************************/
-/** 1ms周期処理(メインコンテキスト) */
-static void _1msCyclicProc(void);
-
-/** 10ms周期処理(メインコンテキスト) */
-static void _10msCyclicProc(void);
-
-/** 100ms周期処理(メインコンテキスト) */
-static void _100msCyclicProc(void);
 
 /************************************************************
  *  public functions
@@ -77,53 +52,6 @@ void Armor_init(void)
 	
 	// マスタからの受信準備
 	R_DMAC0_StartReceive(g_MasterReceiveBuffer, 33);
-	
-	R_IT_Start();
-}
-
-volatile static uint16_t elapsed_us = 0;
-
-void Armor_mainLoop(void)
-{
-	while (1U) {
-		// 1ms周期処理
-		if (g_Is1msElapsed == TRUE) {
-			g_Is1msElapsed = FALSE;
-			g_1msCyclicProcCount++;
-			_1msCyclicProc();
-		}
-		
-		// 10ms周期処理
-		if (g_Is10msElapsed == TRUE) {
-			g_Is10msElapsed = FALSE;
-			_10msCyclicProc();
-		}
-		
-		// 100ms周期処理
-		if (g_Is100msElapsed == TRUE) {
-			g_Is100msElapsed = FALSE;
-			_100msCyclicProc();
-		}
-		
-		R_WDT_Restart();
-    }
-}
-
-void Armor_1msCyclicHandler(void)
-{	
-	// 割り込みハンドラ上でフラグ更新処理を行うため、
-	// 以下の処理内でg_SysTickの値は変動しない。
-	
-	g_SysTick++;
-	g_Is1msElapsed = TRUE;
-	
-	if ((g_SysTick % 10) == 0) {
-		g_Is10msElapsed = TRUE;
-		
-		if ((g_SysTick % 100) == 0) {
-			g_Is100msElapsed = TRUE;
-		}
-	}
 }
 
 void Armor_slaveReceiveendHandler(void)
@@ -164,16 +92,8 @@ void Armor_latchHandler(void)
 	g_IsLatchTriggerReceived = TRUE;
 }
 
-/************************************************************
- *  private functions
- ************************************************************/
-static void _1msCyclicProc(void)
+void Armor_proc(void)
 {
-	static uint8_t count1ms = 0;
-	count1ms++;
-	
-	Command_proc();
-	
 	// LATCHトリガがかかったなら今のLATCHバッファの内容で
 	// 7SegFingerの表示を更新する。
 	// TODO: LATCHバッファのデータチェックが必要
@@ -199,33 +119,8 @@ static void _1msCyclicProc(void)
 		
 		R_DMAC0_StartReceive(g_MasterReceiveBuffer, 33);
 	}
-	
-	/*
-	 * 7SegArmorが7SegFinger4個を更新するのに約1.6msかかる。
-	 * この周期以上に設定する必要がある。
-	 * そもそも7SegFinger自身の更新に2ms*8個=16msかかるので
-	 * この周期と合わせておく。
-	 */
-	if (count1ms >= FINGER_UPDATE_INTERVAL_MS) {
-		Finger_update();
-	}
 }
 
-static void _10msCyclicProc(void)
-{
-	static uint8_t count10ms = 0;
-	count10ms++;
-	
-	/* NOP */
-}
-
-static void _100msCyclicProc(void)
-{
-	static uint8_t count100ms = 0;	
-	count100ms++;
-	
-	if (count100ms >= 5) {
-		count100ms = 0;
-		P3_bit.no0 ^= 1;
-	}
-}
+/************************************************************
+ *  private functions
+ ************************************************************/

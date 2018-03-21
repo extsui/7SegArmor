@@ -37,14 +37,9 @@ void Finger_setDisplayAll(const uint8_t *displayAll);
 void Finger_setBrightnessAll(const uint8_t *brightnessAll);
 
 /**
- * 7SegFinger表示更新
- *
- * 更新が必要な7SegFingerがあれば、
- * 7SegFingerに信号を送信し、表示を更新する。
- *
- * [注意] LATCH信号共有のため、本関数は再入禁止。
+ * 7SegFinger 1ms周期処理
  */
-void Finger_update(void);
+void Finger_proc(void);
 
 /**
  * 7SegFingerデータ送信完了ハンドラ

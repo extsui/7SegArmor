@@ -3,12 +3,10 @@
 
 void Armor_init(void);
 
-void Armor_mainLoop(void);
-
 /**
- * 1ms周期ハンドラ
+ * 1ms周期処理
  */
-void Armor_1msCyclicHandler(void);
+void Armor_proc(void);
 
 /**
  * 下流側受信終了ハンドラ

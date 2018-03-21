@@ -12,6 +12,9 @@
 /************************************************************
  *  define
  ************************************************************/
+/** 7SEG FINGER更新周期(ms) */
+#define FINGER_UPDATE_INTERVAL_MS	(16)
+
 /** 7SEG_FINGER管理構造体 */
 typedef struct {
 	uint8_t display[FINGER_7SEG_NUM];		/**< 表示データ */
@@ -53,7 +56,7 @@ static void Finger_setBrightness(Finger *f, const uint8_t *brightness);
 static void Frame_beginSend(void);
 
 /** フレーム更新 */
-void Frame_update(void);
+static void Finger_update(void);
 
 /************************************************************
  *  public functions
@@ -88,7 +91,35 @@ void Finger_setBrightnessAll(const uint8_t *brightnessAll)
 	Finger_setBrightness(&g_FingerList[3], &brightnessAll[FINGER_7SEG_NUM*3]);
 }
 
-void Finger_update(void)
+void Finger_proc(void)
+{
+	static int count1ms = 0;
+	count1ms++;
+	
+	/*
+	 * 7SegArmorが7SegFinger4個を更新するのに約1.6msかかる。
+	 * この周期以上に設定する必要がある。
+	 * そもそも7SegFinger自身の更新に2ms*8個=16msかかるので
+	 * この周期と合わせておく。
+	 */
+	if (count1ms >= FINGER_UPDATE_INTERVAL_MS) {
+		count1ms = 0;
+		Finger_update();
+	}
+}
+
+/************************************************************
+ *  private functions
+ ************************************************************/
+/**
+ * 7SegFinger表示更新
+ *
+ * 更新が必要な7SegFingerがあれば、
+ * 7SegFingerに信号を送信し、表示を更新する。
+ *
+ * [注意] LATCH信号共有のため、本関数は再入禁止。
+ */
+static void Finger_update(void)
 {
 	// 更新要求有りで送信可能の場合、送信開始。
 	if ((g_IsReqUpdateFinger == TRUE) && (g_IsSendableToFinger == TRUE)) {
@@ -97,10 +128,7 @@ void Finger_update(void)
 		Frame_beginSend();
 	}
 }
-
-/************************************************************
- *  private functions
- ************************************************************/
+ 
 // TODO: 要修正。最適化によっても変化する。
 void delay_us(uint16_t us)
 {

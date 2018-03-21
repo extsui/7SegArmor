@@ -46,6 +46,7 @@ Includes
 #include "finger.h"
 #include "armor.h"
 #include "debug.h"
+#include "loop.h"
 /* End user code. Do not edit comment generated here */
 #include "r_cg_userdefine.h"
 
@@ -73,7 +74,7 @@ void main(void)
     R_MAIN_UserInit();
     /* Start user code. Do not edit comment generated here */
 	DPRINTF("7SegArmor started.\n");
-	Armor_mainLoop();
+	Loop_main();
 	DPRINTF("7SegArmor exit.\n");
 	while (1U);
     /* End user code. Do not edit comment generated here */
@@ -92,6 +93,7 @@ void R_MAIN_UserInit(void)
 	Command_init();
 	Finger_init();
 	Armor_init();
+	Loop_init();
 	
 	R_PCLBUZ0_Start();
 	EI();

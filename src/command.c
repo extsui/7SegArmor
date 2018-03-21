@@ -332,6 +332,22 @@ static void cmdSet(const char *s)
 		DPRINTF("params[%d] = %d\n", i, params[i]);
 	}
 	
+	if (pnum != 2) {
+		return;
+	}
+	
+	switch (params[0]) {
+	case 0:	// 表示テスト
+		memset(data_all, params[1], sizeof(data_all));
+		Finger_setDisplayAll(data_all);
+		break;
+	case 1:	// 輝度テスト
+		memset(data_all, params[1], sizeof(data_all));
+		Finger_setBrightnessAll(data_all);
+		break;
+	default:
+		break;
+	}
 }
 
 static void cmdGet(const char *s)

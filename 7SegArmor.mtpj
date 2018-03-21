@@ -298,6 +298,13 @@
       <TreeImageGuid>941832c1-fc3b-4e1b-94e8-01ea17128b42</TreeImageGuid>
       <ParentItem>ca2f293c-b0a8-47c1-ba09-2a13fbe4bd0d</ParentItem>
     </Instance>
+    <Instance Guid="dacd0083-397c-43e6-84b0-0b61eea3b14e">
+      <Name>loop.c</Name>
+      <Type>File</Type>
+      <RelativePath>src\loop.c</RelativePath>
+      <TreeImageGuid>941832c1-fc3b-4e1b-94e8-01ea17128b42</TreeImageGuid>
+      <ParentItem>ca2f293c-b0a8-47c1-ba09-2a13fbe4bd0d</ParentItem>
+    </Instance>
     <Instance Guid="9758bd78-c568-4f89-984b-e0c502cd1b4e">
       <Name>command.h</Name>
       <Type>File</Type>
@@ -323,6 +330,13 @@
       <Name>debug.h</Name>
       <Type>File</Type>
       <RelativePath>include\debug.h</RelativePath>
+      <TreeImageGuid>03cad1e8-2eb3-4cde-a8a3-982423631122</TreeImageGuid>
+      <ParentItem>b7bfb2be-faab-4594-9e91-7a368a1a378a</ParentItem>
+    </Instance>
+    <Instance Guid="954aabff-55d1-49d5-874e-36d0720d9914">
+      <Name>loop.h</Name>
+      <Type>File</Type>
+      <RelativePath>include\loop.h</RelativePath>
       <TreeImageGuid>03cad1e8-2eb3-4cde-a8a3-982423631122</TreeImageGuid>
       <ParentItem>b7bfb2be-faab-4594-9e91-7a368a1a378a</ParentItem>
     </Instance>
@@ -423,7 +437,9 @@
       <SourceItemType24>CSource</SourceItemType24>
       <SourceItemGuid25>3c7f9034-1a12-4348-a942-75f6106c5688</SourceItemGuid25>
       <SourceItemType25>CSource</SourceItemType25>
-      <SourceItemCount>26</SourceItemCount>
+      <SourceItemGuid26>dacd0083-397c-43e6-84b0-0b61eea3b14e</SourceItemGuid26>
+      <SourceItemType26>CSource</SourceItemType26>
+      <SourceItemCount>27</SourceItemCount>
       <LastDeviceChangedCounter>0</LastDeviceChangedCounter>
     </Instance>
     <Instance Guid="6bb7060d-7e24-4135-bd9b-7db166417523">
@@ -1194,6 +1210,14 @@ include
       <ItemAddTime>636564951155635106</ItemAddTime>
       <ItemAddTimeCount>0</ItemAddTimeCount>
     </Instance>
+    <Instance Guid="dacd0083-397c-43e6-84b0-0b61eea3b14e">
+      <ItemAddTime>636572689538027339</ItemAddTime>
+      <ItemAddTimeCount>0</ItemAddTimeCount>
+    </Instance>
+    <Instance Guid="954aabff-55d1-49d5-874e-36d0720d9914">
+      <ItemAddTime>636572689847828353</ItemAddTime>
+      <ItemAddTimeCount>0</ItemAddTimeCount>
+    </Instance>
     <Instance Guid="0b7e78c3-aadd-45ee-9f9d-ffac6141eeb2">
       <TimeTagModified-SourceItem0--0>-8586834332733983302</TimeTagModified-SourceItem0--0>
       <SourceItem0-IsLockedByUser>False</SourceItem0-IsLockedByUser>
@@ -1301,6 +1325,10 @@ include
       <SourceItem25-IsLockedByUser>False</SourceItem25-IsLockedByUser>
       <SourceItem25-BuildingTarget-0>True</SourceItem25-BuildingTarget-0>
       <SourceItem25-IndividualCompileOption-0>False</SourceItem25-IndividualCompileOption-0>
+      <TimeTagModified-SourceItem26--0>-8586799671316748469</TimeTagModified-SourceItem26--0>
+      <SourceItem26-IsLockedByUser>False</SourceItem26-IsLockedByUser>
+      <SourceItem26-BuildingTarget-0>True</SourceItem26-BuildingTarget-0>
+      <SourceItem26-IndividualCompileOption-0>False</SourceItem26-IndividualCompileOption-0>
     </Instance>
   </Class>
   <Class Guid="44fa27c9-0aa0-4297-bd3b-2c5c5bdb8881">
@@ -5080,7 +5108,7 @@ include
         &lt;cg_security7 Name="cg_security7" Value="00" /&gt;
         &lt;cg_security5 Name="cg_security5" Value="00" /&gt;
         &lt;cg_crc_area Name="cg_crc_area" Value="00" /&gt;
-        &lt;rrm Name="rrm" Value="0FE00" /&gt;
+        &lt;ocdstart Name="ocdstart" Value="0FE00" /&gt;
         &lt;cg_security3 Name="cg_security3" Value="00" /&gt;
         &lt;cg_security0 Name="cg_security0" Value="00" /&gt;
         &lt;cg_security1 Name="cg_security1" Value="00" /&gt;
@@ -5090,13 +5118,13 @@ include
         &lt;cg_option Name="cg_option" Value="84" /&gt;
         &lt;cg_security8 Name="cg_security8" Value="00" /&gt;
         &lt;cg_security6 Name="cg_security6" Value="00" /&gt;
-        &lt;ocdstart Name="ocdstart" Value="0FE00" /&gt;
+        &lt;cg_security4 Name="cg_security4" Value="00" /&gt;
         &lt;cg_onchip Name="cg_onchip" Value="" /&gt;
         &lt;cg_security2 Name="cg_security2" Value="00" /&gt;
         &lt;cg_iawctl_value Name="cg_iawctl_value" Value="80" /&gt;
         &lt;lvi_option Name="lvi_option" Value="33" /&gt;
         &lt;wdt_option Name="wdt_option" Value="FD" /&gt;
-        &lt;cg_security4 Name="cg_security4" Value="00" /&gt;
+        &lt;rrm Name="rrm" Value="0FE00" /&gt;
       &lt;/GlobleUserTag&gt;
     &lt;/TAG&gt;
   &lt;/DIR&gt;
