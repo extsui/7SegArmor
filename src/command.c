@@ -359,6 +359,8 @@ static void cmdGet(const char *s)
 
 static void cmdDebug(const char *s)
 {
+	/*
+
 	// 連結表示設定コマンド
 	// TODO:
 	// 最終的にはシリアルから設定したデータを送るようにする。
@@ -376,7 +378,40 @@ static void cmdDebug(const char *s)
 	g_ArmorFrameSendCount = 1;
 	
 	// 33バイトのDMA送信@1MHz≒270[us]
+	DPRINTF("%d", test_data[g_ArmorFrameSendCount*33+1]);
 	R_DMAC1_StartSend((uint8_t *)&test_data[g_ArmorFrameSendCount*33], 33);
+	
+	*/
+	
+	
+	int i;
+	int pnum = 0;
+	int params[2];
+	
+	pnum = getParam(s, params, 2);
+	
+	DPRINTF("pnum = %d\n", pnum);
+	for (i = 0; i < pnum; i++) {
+		DPRINTF("params[%d] = %d\n", i, params[i]);
+	}
+	
+	if (pnum != 2) {
+		return;
+	}
+	
+	switch (params[0]) {
+	case 0:	// 表示テスト
+		DPRINTF("test_data[%d] send\n", params[1]*33);
+		R_DMAC1_StartSend((uint8_t *)&test_data[params[1]*33], 33);
+		break;
+	case 1:	// 更新
+		DPRINTF("update.");
+		armorFrameSendendProc();
+		break;
+	default:
+		break;
+	}
+	
 }
 
 static void cmdReboot(const char *s)
@@ -412,6 +447,11 @@ void Command_receivedHandler(void)
 
 void Command_masterSendendHandler(void)
 {
+	// 下流(中継機器)がさらに下流に送信したとき、
+	// ここのハンドラが呼び出されるわ・・・
+	// そらデータ無茶苦茶になるしLATCH出まくるわけだ・・・
+	
+	/*
 	g_ArmorFrameSendCount++;
 		
 	// フレーム送信中
@@ -425,6 +465,7 @@ void Command_masterSendendHandler(void)
 		R_TAU0_BusyWait(20);
 		
 		// 次のフレーム送信
+		DPRINTF("%d", test_data[g_ArmorFrameSendCount*33+1]);
 		R_DMAC1_StartSend((uint8_t *)&test_data[g_ArmorFrameSendCount*33], 33);
 		
 	// 最終フレーム送信後
@@ -434,8 +475,10 @@ void Command_masterSendendHandler(void)
 		// ・DMA1回理論値：33*8[bit] / 1[Mbps] = 264[us]
 		// ・DMA1回測定値：267～268[us]
 		//   ⇒遅延時間は、300[us] 見ておけば問題ないと判断。
+		
 		R_TAU0_SetTimeout(300, armorFrameSendendProc);
 	}
+	*/
 }
 
 /************************************************************

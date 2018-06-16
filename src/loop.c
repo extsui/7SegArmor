@@ -54,8 +54,6 @@ void Loop_init(void)
 	R_IT_Start();
 }
 
-volatile static uint16_t elapsed_us = 0;
-
 void Loop_main(void)
 {
 	while (1U) {
