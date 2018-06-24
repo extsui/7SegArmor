@@ -12,51 +12,14 @@
 /************************************************************
  *  define
  ************************************************************/
-/** 7SEG FINGER更新周期(ms) */
-#define FINGER_UPDATE_INTERVAL_MS	(16)
-
-/** 7SEG_FINGER管理構造体 */
-typedef struct {
-	uint8_t display[FINGER_7SEG_NUM];		/**< 表示データ */
-	uint8_t brightness[FINGER_7SEG_NUM];	/**< 輝度データ */
-} Finger;
-
-/** 7SEG_FINGER管理構造体リスト */
-static Finger g_FingerList[FINGER_NUM];
-
-/** 7SEG_FINGER更新要求(表示データか輝度データが更新されると有効になる) */
-static BOOL g_IsReqUpdateFinger = TRUE;
-
-/** 7SEG_FINGERに送信可能か */
-static BOOL g_IsSendableToFinger = TRUE;
-
-/** 起動時の画面 */
-static const uint8_t g_StartupDisplay[] = {
-	0xAC, 0x82, 0x82, 0x82, 0x82, 0x82, 0x82, 0xE8,
-	0x6C, 0x00, 0xE4, 0xB6, 0x9E, 0xBC, 0x00, 0x6C,
-	0x6C, 0x00, 0xDA, 0xFC, 0x60, 0xE4, 0x00, 0x6C,
-	0x5C, 0x12, 0x12, 0x12, 0x12, 0x12, 0x12, 0x74
-};
-
-/** 起動時の輝度 */
-static const uint8_t g_StartupBrightness[] = {
-	255/4, 255/4, 255/4, 255/4, 255/4, 255/4, 255/4, 255/4,
-	255/4, 255/4, 255/4, 255/4, 255/4, 255/4, 255/4, 255/4,
-	255/4, 255/4, 255/4, 255/4, 255/4, 255/4, 255/4, 255/4,
-	255/4, 255/4, 255/4, 255/4, 255/4, 255/4, 255/4, 255/4,
-};
+/** 7SegFingerコマンド用バッファ */
+static uint8_t g_FingerCmdBuffer[FINGER_NUM][FINGER_CMD_SIZE];
 
 /************************************************************
  *  prototype
  ************************************************************/
-static void Finger_setDisplay(Finger *f, const uint8_t *display);
-static void Finger_setBrightness(Finger *f, const uint8_t *brightness);
- 
-/** フレーム送信開始 */
-static void Frame_beginSend(void);
-
-/** フレーム更新 */
-static void Finger_update(void);
+// 送信開始
+static void beginSend(void);
 
 /************************************************************
  *  public functions
@@ -64,70 +27,25 @@ static void Finger_update(void);
 void Finger_init(void)
 {
 	R_CSI00_Start();
-	
-	// 表示データ設定
-	Finger_setDisplayAll(g_StartupDisplay);
-	
-	// 輝度データ設定
-	Finger_setBrightnessAll(g_StartupBrightness);
-	
-	// 更新
-	Finger_update();
 }
 
-void Finger_setDisplayAll(const uint8_t *displayAll)
+void Finger_setCommand(uint8_t index, const uint8_t *cmd)
 {
-	Finger_setDisplay(&g_FingerList[0], &displayAll[FINGER_7SEG_NUM*0]);
-	Finger_setDisplay(&g_FingerList[1], &displayAll[FINGER_7SEG_NUM*1]);
-	Finger_setDisplay(&g_FingerList[2], &displayAll[FINGER_7SEG_NUM*2]);
-	Finger_setDisplay(&g_FingerList[3], &displayAll[FINGER_7SEG_NUM*3]);
-}
-
-void Finger_setBrightnessAll(const uint8_t *brightnessAll)
-{
-	Finger_setBrightness(&g_FingerList[0], &brightnessAll[FINGER_7SEG_NUM*0]);
-	Finger_setBrightness(&g_FingerList[1], &brightnessAll[FINGER_7SEG_NUM*1]);
-	Finger_setBrightness(&g_FingerList[2], &brightnessAll[FINGER_7SEG_NUM*2]);
-	Finger_setBrightness(&g_FingerList[3], &brightnessAll[FINGER_7SEG_NUM*3]);
-}
-
-void Finger_proc(void)
-{
-	static int count1ms = 0;
-	count1ms++;
-	
-	/*
-	 * 7SegArmorが7SegFinger4個を更新するのに約1.6msかかる。
-	 * この周期以上に設定する必要がある。
-	 * そもそも7SegFinger自身の更新に2ms*8個=16msかかるので
-	 * この周期と合わせておく。
-	 */
-	if (count1ms >= FINGER_UPDATE_INTERVAL_MS) {
-		count1ms = 0;
-		Finger_update();
+	if (index >= FINGER_NUM) {
+		return;
 	}
+	memcpy(g_FingerCmdBuffer[index], cmd, FINGER_CMD_SIZE);
+}
+
+void Finger_update(void)
+{
+	// TODO: 前回の送信中だったらはじく処理を追加する？
+	beginSend();
 }
 
 /************************************************************
  *  private functions
  ************************************************************/
-/**
- * 7SegFinger表示更新
- *
- * 更新が必要な7SegFingerがあれば、
- * 7SegFingerに信号を送信し、表示を更新する。
- *
- * [注意] LATCH信号共有のため、本関数は再入禁止。
- */
-static void Finger_update(void)
-{
-	// 更新要求有りで送信可能の場合、送信開始。
-	if ((g_IsReqUpdateFinger == TRUE) && (g_IsSendableToFinger == TRUE)) {
-		g_IsReqUpdateFinger = FALSE;
-		g_IsSendableToFinger = FALSE;
-		Frame_beginSend();
-	}
-}
  
 // TODO: 要修正。最適化によっても変化する。
 void delay_us(uint16_t us)
@@ -138,18 +56,6 @@ void delay_us(uint16_t us)
 			NOP();
 		}
 	}
-}
-
-static void Finger_setDisplay(Finger *f, const uint8_t *display)
-{
-	memcpy(f->display, display, FINGER_7SEG_NUM);
-	g_IsReqUpdateFinger = TRUE;
-}
-
-static void Finger_setBrightness(Finger *f, const uint8_t *brightness)
-{
-	memcpy(f->brightness, brightness, FINGER_7SEG_NUM);
-	g_IsReqUpdateFinger = TRUE;
 }
 
 /************************************************************
@@ -167,11 +73,13 @@ static void Finger_setBrightness(Finger *f, const uint8_t *brightness)
 #define FINGER_CS3		(P2_bit.no4)
 #define FINGER_LATCH	(P14_bit.no7)
 
+// 7SegFinger番号(0-3)
+// コマンド送信に使用する。
+static uint8_t g_FingerIndex = 0;
+
 /************************************************************
  *  prototype
  ************************************************************/
-static void makeDisplayFrame(const uint8_t *display);
-static void makeBrightnessFrame(const uint8_t *brightness);
 static void assertCS(uint8_t cs);
 static void negateCS(uint8_t cs);
 static void setCS(uint8_t cs, uint8_t value);
@@ -179,100 +87,37 @@ static void setCS(uint8_t cs, uint8_t value);
 /************************************************************
  *  public functions
  ************************************************************/
-static uint8_t g_SendIndex = 0;	// 0～FINGER_7SEG_NUM-1
-static uint8_t g_SendItem = 0;	// 0:display / 1:brightness
-static uint8_t g_SendBuf[FINGER_FRAME_SIZE];
-
-/**
- * フレーム送信
- *
- * 以下の手順で7SEG_FINGERを必要最小限のものだけ更新する。
- * (1) [0]の表示
- * (2) [0]の輝度
- * (3) [1]の表示
- * (4) [1]の輝度
- * (5) [2]の表示
- * ...
- */
-static void Frame_beginSend(void)
+static void beginSend(void)
 {
-	/* 最初の表示フレーム送信開始(メインコンテキストから呼び出される) */
-	if ((g_SendIndex == 0) && (g_SendItem == 0)) {
-		makeDisplayFrame(g_FingerList[g_SendIndex].display);
-		g_SendItem++;
-		
-		assertCS(g_SendIndex);
-		delay_us(10);
-		R_CSI00_Send(g_SendBuf, FINGER_FRAME_SIZE);
-		return;
-		
-	/* 表示フレーム送信完了⇒輝度フレーム送信開始(割り込みハンドラから呼び出される) */
-	} else if ((g_SendIndex < FINGER_NUM) && (g_SendItem == 1)) {
-		delay_us(10);
-		negateCS(g_SendIndex);
-		delay_us(10);
-	
-		makeBrightnessFrame(g_FingerList[g_SendIndex].brightness);
-		g_SendItem = 0;
-		
-		assertCS(g_SendIndex);
-		delay_us(10);
-		R_CSI00_Send(g_SendBuf, FINGER_FRAME_SIZE);
-		
-		g_SendIndex++;
-		return;
-	
-	/* 輝度フレーム送信完了⇒次の表示フレーム送信開始(割り込みハンドラから呼び出される) */
-	} else if ((g_SendIndex < FINGER_NUM) && g_SendItem == 0) {
-		delay_us(10);
-		negateCS(g_SendIndex - 1);
-		delay_us(10);
-
-		makeDisplayFrame(g_FingerList[g_SendIndex].display);
-		g_SendItem++;
-		
-		assertCS(g_SendIndex);
-		delay_us(10);
-		R_CSI00_Send(g_SendBuf, FINGER_FRAME_SIZE);
-		return;
-		
-	/* 最後の輝度フレーム送信完了(割り込みハンドラから呼び出される) */
-	} else if (g_SendIndex >= FINGER_NUM) {
-		delay_us(10);
-		negateCS(g_SendIndex - 1);
-		delay_us(10);
-
-		FINGER_LATCH = 1;
-		FINGER_LATCH = 0;
-	
-		delay_us(10);
-		
-		g_SendIndex = 0;
-		g_SendItem = 0;
-		g_IsSendableToFinger = TRUE;
-		return;
-	
-	} else {
-		/* ここには来ないはず */
-		ASSERT(0);
-	}
+	g_FingerIndex = 0;
+	assertCS(g_FingerIndex);
+	delay_us(10);
+	R_CSI00_Send(g_FingerCmdBuffer[g_FingerIndex], FINGER_CMD_SIZE);
 }
 
 void Finger_sendEndHandler(void)
 {
-	Frame_beginSend();
-}
-
-static void makeDisplayFrame(const uint8_t *display)
-{
-	g_SendBuf[0] = FINGER_FRAME_TYPE_DISPLAY;
-	memcpy(&g_SendBuf[1], display, FINGER_7SEG_NUM);
-}
-
-static void makeBrightnessFrame(const uint8_t *brightness)
-{
-	g_SendBuf[0] = FINGER_FRAME_TYPE_BRIGHTNESS;
-	memcpy(&g_SendBuf[1], brightness, FINGER_7SEG_NUM);
+	// WORKAROUND:
+	// 送信完了割り込みなのか、送信アイドル割り込みなのかが未調査。
+	// r_csi00_interrupt()を見た感じ送信完了割り込みのようなので、
+	// 最終バイト送信分以上は最低でも待つ必要がある。
+	// ⇒一応ウェイトを加えておく。
+	delay_us(10);
+	
+	negateCS(g_FingerIndex);
+	g_FingerIndex++;
+	
+	if (g_FingerIndex < FINGER_NUM) {
+		assertCS(g_FingerIndex);
+		delay_us(10);
+		R_CSI00_Send(g_FingerCmdBuffer[g_FingerIndex], FINGER_CMD_SIZE);
+	} else {
+		// 最終への送信が完了したらLATCH信号を送信して完了
+		delay_us(10);
+		FINGER_LATCH = 1;
+		delay_us(10);
+		FINGER_LATCH = 0;
+	}
 }
 
 /************************************************************

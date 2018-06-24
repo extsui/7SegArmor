@@ -32,7 +32,6 @@ Includes
 #include "r_cg_macrodriver.h"
 #include "r_cg_dmac.h"
 /* Start user code for include. Do not edit comment generated here */
-#include "command.h" // TODO: ARMOR API調整時に削除
 #include "armor.h"
 /* End user code. Do not edit comment generated here */
 #include "r_cg_userdefine.h"
@@ -60,10 +59,6 @@ Global variables and functions
 static void __near r_dmac0_interrupt(void)
 {
     /* Start user code. Do not edit comment generated here */
-	// LATCH立ち上がりが来た時点でINTC割り込みがかかるので、DMA受信完了時は何もしない。
-	// TODO: DMAC受信完了→INTC割り込み が正規ルート。逆転した場合のエラーログ吐き出し処理を実装すること。
-	NOP();
-	
 	Armor_slaveReceiveendHandler();
     /* End user code. Do not edit comment generated here */
 }
@@ -77,8 +72,7 @@ static void __near r_dmac0_interrupt(void)
 static void __near r_dmac1_interrupt(void)
 {
     /* Start user code. Do not edit comment generated here */
-	// TODO: ARMOR APIに修正用意
-	Command_masterSendendHandler();
+	Armor_masterSendendHandler();
     /* End user code. Do not edit comment generated here */
 }
 

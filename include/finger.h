@@ -4,14 +4,8 @@
 /** 7SegFingerの個数 */
 #define FINGER_NUM	(4)
 
-/** 7SegFingerの7セグの個数 */
-#define FINGER_7SEG_NUM	(8)
-
-/** 7SegFingerのフレームタイプ */
-#define FINGER_FRAME_TYPE_DISPLAY		(1)
-#define FINGER_FRAME_TYPE_BRIGHTNESS	(2)
-
-#define FINGER_FRAME_SIZE				(9)
+/** 7SegFingerコマンドサイズ */
+#define FINGER_CMD_SIZE	(9)
 
 /**
  * 7SegFingerモジュール初期化
@@ -19,27 +13,23 @@
 void Finger_init(void);
 
 /**
- * 7SegFinger全表示設定
+ * 7SegFingerコマンド
+ * 
+ * 7SegFingerコマンドを直接設定する。
+ * コマンドIDを含めた固定長9バイト全てを7SegFingerに送信する。
+ * コマンド内容の解釈は7SegFinger自体に任せる。
  *
- * FINGER_7SEG_NUM*FINGER_NUM分の全表示データを設定する。
- *
- * @param dispAllData [in] 全表示データ。要素数FINGER_7SEG_NUM*FINGER_NUMの配列。
+ * @param [in] index 7SegFinger番号(0-3)
+ * @param [in] cmd 7SegFingerコマンド
  */
-void Finger_setDisplayAll(const uint8_t *displayAll);
+void Finger_setCommand(uint8_t index, const uint8_t *cmd);
 
 /**
- * 7SegFinger全輝度設定
+ * 7SegFinger更新処理
  *
- * FINGER_7SEG_NUM*FINGER_NUM分の全輝度データを設定する。
- *
- * @param brightnessAllData [in] 全輝度データ。要素数FINGER_7SEG_NUM*FINGER_NUMの配列。
+ * 現在の送信予定のコマンドを7SegFingerそれぞれに送信開始する。
  */
-void Finger_setBrightnessAll(const uint8_t *brightnessAll);
-
-/**
- * 7SegFinger 1ms周期処理
- */
-void Finger_proc(void);
+void Finger_update(void);
 
 /**
  * 7SegFingerデータ送信完了ハンドラ

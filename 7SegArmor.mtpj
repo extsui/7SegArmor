@@ -1700,10 +1700,9 @@ include
       <DebuggerProperty-HookProperty-HookTransaction-Broke-Length>0</DebuggerProperty-HookProperty-HookTransaction-Broke-Length>
       <DebuggerProperty-HookProperty-HookTransaction-Connected-Length>0</DebuggerProperty-HookProperty-HookTransaction-Connected-Length>
       <DebuggerProperty-HookProperty-HookTransaction-Disconnecting-Length>0</DebuggerProperty-HookProperty-HookTransaction-Disconnecting-Length>
-      <Simulator-EditWave-WindowCount>0</Simulator-EditWave-WindowCount>
-      <Simulator-Panel-WindowCount>0</Simulator-Panel-WindowCount>
-      <Simulator-PrmFile-Contents>AQAAABYAAABzdGRpbwDaCAAAAAAAEAAAAAAAAAAAAAAAAAAApNw0AEILz1kAEAAAAAAAAKgw2Vmw3DQAc87PWagw2Vm83DQASQnPWbB0zAjI3DQAiqTPWRUAAAAE3TQA8DXUWagw2VnmNdRZod0GavzdNAAAAAAA/N00AAEAAADY3DQAsHTMCFDdNABattZZXTXmM/7////mNdRZ80MrGwEAAACoMNlZfzCHbvzdNAAAAAAAtEUrGzTdNAAxCc9ZsHTMCKgw2VnQ6C82AAAAAKDdNABM3TQASQnPWbB0zAhY3TQAiqTPWRUAAACI3TQATkMrG6gw2Vlm4oJ3Oi0c9NDoLzb43TQAJwAAAAEAAQABAAAAECcAAAAAAAAA6////wgAAAAwMDAwMDAwMAIAAAAuXA==</Simulator-PrmFile-Contents>
-      <Simulator-PrsFile-Contents>W1BhbmVsXQ0KUHVsbFVwIFBpbnM9DQpQdWxsRG93biBQaW5zPQ0KW01haW5dDQpGbGFnPTANClNob3dTdHlsZT0xDQpNaW5Qb3NpdGlvbi1YPS0xDQpNaW5Qb3NpdGlvbi1ZPS0xDQpNYXhQb3NpdGlvbi1YPS0xDQpNYXhQb3NpdGlvbi1ZPS0xDQpOb3JtYWxQb3NpdGlvbi1MZWZ0PTE1MA0KTm9ybWFsUG9zaXRpb24tVG9wPTE1MA0KTm9ybWFsUG9zaXRpb24tUmlnaHQ9MTU5MA0KTm9ybWFsUG9zaXRpb24tQm90dG9tPTkxMA0K</Simulator-PrsFile-Contents>
+      <Simulator-EditWave-WindowCount>1</Simulator-EditWave-WindowCount>
+      <Simulator-EditWave-DocumentName-0>NwBTAGUAZwBBAHIAbQBvAHIAMAAuAHcAdgBpAA==</Simulator-EditWave-DocumentName-0>
+      <Simulator-EditWave-Contents-0>IyBTaWduYWwgRmlsZQ0KIyBHZW5lcmF0ZWQgYnkgUmVuZXNhcyBFbGVjdHJvbmljcyBTaW11bGF0b3INCg0KDQpPUFQsVkVSU0lPTiwxLjAwDQpPUFQsUElOX05BTUUNCk9QVCxQSU5fQUxJQVMNCk9QVCxQSU5fVFlQRQ0KT1BULFBJTl9JTlBVVA0KT1BULFRJTUVfVU5JVCxNQUlOQ0xLDQo=</Simulator-EditWave-Contents-0>
     </Instance>
     <Instance Guid="754eca4d-0f70-4c47-97d1-5dfcddd4123d">
       <DeviceChangedCounter>0</DeviceChangedCounter>
@@ -5108,21 +5107,21 @@ include
         &lt;cg_security7 Name="cg_security7" Value="00" /&gt;
         &lt;cg_security5 Name="cg_security5" Value="00" /&gt;
         &lt;cg_crc_area Name="cg_crc_area" Value="00" /&gt;
-        &lt;ocdstart Name="ocdstart" Value="0FE00" /&gt;
         &lt;cg_security3 Name="cg_security3" Value="00" /&gt;
         &lt;cg_security0 Name="cg_security0" Value="00" /&gt;
         &lt;cg_security1 Name="cg_security1" Value="00" /&gt;
-        &lt;cg_ocd_ram_size Name="cg_ocd_ram_size" Value="512" /&gt;
         &lt;clock_option Name="clock_option" Value="E8" /&gt;
+        &lt;lvi_option Name="lvi_option" Value="33" /&gt;
+        &lt;cg_security2 Name="cg_security2" Value="00" /&gt;
         &lt;pior_value Name="pior_value" Value="00" /&gt;
         &lt;cg_option Name="cg_option" Value="84" /&gt;
         &lt;cg_security8 Name="cg_security8" Value="00" /&gt;
         &lt;cg_security6 Name="cg_security6" Value="00" /&gt;
-        &lt;cg_security4 Name="cg_security4" Value="00" /&gt;
+        &lt;ocdstart Name="ocdstart" Value="0FE00" /&gt;
         &lt;cg_onchip Name="cg_onchip" Value="" /&gt;
-        &lt;cg_security2 Name="cg_security2" Value="00" /&gt;
+        &lt;cg_security4 Name="cg_security4" Value="00" /&gt;
         &lt;cg_iawctl_value Name="cg_iawctl_value" Value="80" /&gt;
-        &lt;lvi_option Name="lvi_option" Value="33" /&gt;
+        &lt;cg_ocd_ram_size Name="cg_ocd_ram_size" Value="512" /&gt;
         &lt;wdt_option Name="wdt_option" Value="FD" /&gt;
         &lt;rrm Name="rrm" Value="0FE00" /&gt;
       &lt;/GlobleUserTag&gt;

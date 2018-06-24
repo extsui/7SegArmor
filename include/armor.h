@@ -9,7 +9,30 @@ void Armor_init(void);
 void Armor_proc(void);
 
 /**
- * 下流側受信終了ハンドラ
+ * UARTからの受信完了
+ *
+ * スレーブ受信完了ハンドラのUART版。
+ */
+void Armor_uartReceiveend(const uint8_t *armorCmd);
+
+/**
+ * UARTからのLATCH
+ *
+ * LATCH立ち上がりハンドラのUART版。
+ */
+void Armor_uartLatch(void);
+
+/**
+ * マスタ送信完了ハンドラ
+ *
+ * マスタとしてのスレーブへのコマンド送信が完了した際に呼び出される。
+ */
+void Armor_masterSendendHandler(void);
+
+/**
+ * スレーブ受信完了ハンドラ
+ *
+ * スレーブとしてのマスタからのコマンド受信が完了した際に呼び出される。
  */
 void Armor_slaveReceiveendHandler(void);
 

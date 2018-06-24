@@ -216,7 +216,7 @@ static void r_csi10_callback_sendend(void)
 {
     /* Start user code. Do not edit comment generated here */
 	// DMA使用により本コールバックは呼び出されない。
-    //Command_masterSendendHandler();
+    //Armor_masterSendendHandler();
 	/* End user code. Do not edit comment generated here */
 }
 

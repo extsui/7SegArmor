@@ -15,19 +15,21 @@
 /************************************************************
  *  define
  ************************************************************/
+/** 7SegArmorコマンドサイズ */
+#define ARMOR_CMD_SIZE	(36)
 
 /************************************************************
  *  global variables
  ************************************************************/
 /** 上流受信バッファ */
-static uint8_t g_MasterReceiveBuffer[33];
+static uint8_t g_MasterReceiveBuffer[ARMOR_CMD_SIZE];
 
 /** LATCHバッファ */
 // TODO: ARMORフレームサイズ⇒#define化
-static uint8_t g_LatchBuffer[33];
+static uint8_t g_LatchBuffer[ARMOR_CMD_SIZE];
 
 /** 下流送信バッファ */
-static uint8_t g_SlaveSendBuffer[33];
+static uint8_t g_SlaveSendBuffer[ARMOR_CMD_SIZE];
 
 /** LATCHトリガ受信フラグ */
 static BOOL g_IsLatchTriggerReceived = FALSE;
@@ -51,23 +53,45 @@ void Armor_init(void)
 	R_INTC10_Start();
 	
 	// マスタからの受信準備
-	R_DMAC0_StartReceive(g_MasterReceiveBuffer, 33);
+	R_DMAC0_StartReceive(g_MasterReceiveBuffer, ARMOR_CMD_SIZE);
+}
+
+void Armor_uartReceiveend(const uint8_t *armorCmd)
+{
+	memcpy(g_MasterReceiveBuffer, armorCmd, ARMOR_CMD_SIZE);
+	
+	// MEMO:
+	// UART使用7SegArmorはSPI受信しない前提とする。
+	// ⇒UARTとSPI受信を同時に行うとデータ破壊の危険性あり。
+	Armor_slaveReceiveendHandler();
+}
+
+void Armor_uartLatch(void)
+{
+	// MEMO: Armor_uartReceiveend()と同様に排他問題あり。
+	Armor_latchHandler();
+}
+
+void Armor_masterSendendHandler(void)
+{
+	// DMA受信完了割り込みで処理が進んでいくため、
+	// DMA送信完了割り込みでは何もする必要はない。
 }
 
 void Armor_slaveReceiveendHandler(void)
 {
 	// 1回目の受信完了時はLATCHバッファに溜める。
 	if (!g_IsUpdatableByLatch) {
-		memcpy(g_LatchBuffer, g_MasterReceiveBuffer, 33);
+		memcpy(g_LatchBuffer, g_MasterReceiveBuffer, ARMOR_CMD_SIZE);
 		g_IsUpdatableByLatch = TRUE;
 	// 2回目から下流へ送信するようにする。
 	} else {
-		memcpy(g_SlaveSendBuffer, g_MasterReceiveBuffer, 33);
-		R_DMAC1_StartSend(g_SlaveSendBuffer, 33);
+		memcpy(g_SlaveSendBuffer, g_MasterReceiveBuffer, ARMOR_CMD_SIZE);
+		R_DMAC1_StartSend(g_SlaveSendBuffer, ARMOR_CMD_SIZE);
 	}
 	
 	// LATCHトリガまで受信は継続する。
-	R_DMAC0_StartReceive(g_MasterReceiveBuffer, 33);
+	R_DMAC0_StartReceive(g_MasterReceiveBuffer, ARMOR_CMD_SIZE);
 }
 
 void Armor_latchHandler(void)
@@ -106,18 +130,19 @@ void Armor_proc(void)
 			DPRINTF("Error: 下流受信完了前にLATCHトリガが来た\n");
 		}
 		
-		if (g_LatchBuffer[0] == 1) {
-			Finger_setDisplayAll(&g_LatchBuffer[1]);
-			DPRINTF("Slave Update.\n");
-		} else {
-			DPRINTF("Bad Command.\n");
-		}
+		Finger_setCommand(0, &g_LatchBuffer[9*0]);
+		Finger_setCommand(1, &g_LatchBuffer[9*1]);
+		Finger_setCommand(2, &g_LatchBuffer[9*2]);
+		Finger_setCommand(3, &g_LatchBuffer[9*3]);
+		Finger_update();
+	
+		DPRINTF("Slave Update.\n");
 		
 		memset(g_MasterReceiveBuffer, 0, sizeof(g_MasterReceiveBuffer));
 		memset(g_LatchBuffer, 0, sizeof(g_LatchBuffer));
 		memset(g_SlaveSendBuffer, 0, sizeof(g_SlaveSendBuffer));
 		
-		R_DMAC0_StartReceive(g_MasterReceiveBuffer, 33);
+		R_DMAC0_StartReceive(g_MasterReceiveBuffer, ARMOR_CMD_SIZE);
 	}
 }
 

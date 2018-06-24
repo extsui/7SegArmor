@@ -4,7 +4,7 @@
 #include "r_cg_dmac.h"
 #include "r_cg_timer.h"
 #include "command.h"
-#include "finger.h"
+#include "armor.h"
 #include <stdio.h>
 #include <string.h> /* memset() */
 #include <stdlib.h> /* strtol() */
@@ -57,14 +57,11 @@ typedef struct {
 	char	*info;	/**< 情報(ヘルプコマンド時に表示) */
 } Command;
 
-static void cmdC0(const char *s);
-static void cmdC1(const char *s);
-static void cmdC2(const char *s);
-static void cmdC3(const char *s);
-static void cmdC4(const char *s);
-static void cmdC5(const char *s);
+static void cmdInstruct(const char *s);
+static void cmdUpdate(const char *s);
 static void cmdHelp(const char *s);
 static void cmdVersion(const char *s);
+static void cmdSwitch(const char *s);
 static void cmdSet(const char *s);
 static void cmdGet(const char *s);
 static void cmdDebug(const char *s);
@@ -72,14 +69,11 @@ static void cmdReboot(const char *s);
 static void cmdTest(const char *s);
 
 static const Command g_CommandTable[] = {
-	{ "C0",		2,	cmdC0,		"Get Info",					},
-	{ "C1",		2,	cmdC1,		"Set Display",				},
-	{ "C2",		2,	cmdC2,		"Set Brightness",			},
-	{ "C3",		2,	cmdC3,		"Set Chain Display",		},
-	{ "C4", 	2,	cmdC4,		"Set Chain Brightness",		},
-	{ "C5",		2,	cmdC5,		"Update All Chain",			},
+	{ "#0",		2,	cmdInstruct,"Instruct",					},
+	{ "#1",		2,	cmdUpdate,	"Update",					},
 	{ "-h",		2,	cmdHelp,	"Help",						},
 	{ "-v",		2,	cmdVersion,	"Version",					},
+	{ "sw",		2,	cmdSwitch,	"Get DIP Switch",			},
 	{ "s",		1,	cmdSet,		"Set Param : s <p1> <p2>",	},
 	{ "g",		1,	cmdGet,		"Get Param : g <p1>",		},
 	{ "dbg",	3,	cmdDebug,	"Debug : dbg <p1> <p2>",	},
@@ -88,7 +82,7 @@ static const Command g_CommandTable[] = {
 };
 
 // TODO: armor.cに移動するべき。
-static uint8_t data_all[FINGER_7SEG_NUM*FINGER_NUM];	// ローカル変数にするとスタックオーバーフロー
+static uint8_t data_all[36];	// ローカル変数にするとスタックオーバーフロー
 
 // ★注意★
 // DMA転送対象領域は内蔵RAMだけであり、const領域は転送できない。
@@ -125,12 +119,6 @@ static uint8_t test_data[] = {
  * コマンド受信処理
  */
 static void Command_onReceive(const char *rxBuff);
-
-/**
- * ７SegArmorフレーム送信終了処理
- * @note DMA送信処理が全部終了したのでLATCH↑↓処理を実施する。
- */
-static void armorFrameSendendProc(void);
 
 /**
  * 2文字を16進数1バイトに変換する。
@@ -232,77 +220,23 @@ static void Command_onReceive(const char *rxBuff)
 
 /************************************************************/
 
-static void cmdC0(const char *s)
-{
-	uint8_t dipsw;
-	
-	// DIPSW[3:0] = [ P120 | P43 | P42 | P41 ]、負論理
-	dipsw = (((uint8_t)P12_bit.no0 << 3) |
-			 ((uint8_t)P4_bit.no3  << 2) |
-			 ((uint8_t)P4_bit.no2  << 1) |
-			 ((uint8_t)P4_bit.no1  << 0));
-	dipsw = ~dipsw & 0x0F;
-	DPRINTF("Get Mode 0x%02x\n", dipsw);
-}
-
-static void cmdC1(const char *s)
+static void cmdInstruct(const char *s)
 {
 	uint8_t i;
 	
-	// 型: [ 'C', '1', (0, 0), (0, 1), ..., (3, 7) ]
-	// 例: C1000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F202122232425262728292A2B2C2D2E2F303132333435363738393A3B3C3D3E3F\n
-	for (i = 0; i < FINGER_7SEG_NUM*FINGER_NUM; i++) {
+	// 例: #001FFFFFFFFFFFFFFFF01FFFFFFFFFFFFFFFF01FFFFFFFFFFFFFFFF01FFFFFFFFFFFFFFFF\n
+	// ※"#0"を除いたものが引数sにセットされている
+	for (i = 0; i < 36; i++) {
 		data_all[i] = atoh(s[i*2], s[i*2 + 1]);
 	}
-	
-	{
-		static const uint8_t num_to_pattern[] = {
-			0xfc, 0x60, 0xda, 0xf2, 0x66, 0xb6, 0xbe, 0xe4, 0xfe, 0xf6,
-		};
-		
-		uint32_t temp = g_CommandRecvCount;
-		for (i = 7; i > 0; i--) {
-			data_all[i] = num_to_pattern[temp % 10];
-			temp /= 10;
-				if (temp == 0) {
-				break;
-			}
-		}
-	}
-		
-	Finger_setDisplayAll(data_all);
+	Armor_uartReceiveend(data_all);
 	g_CommandRecvCount++;
 	DPRINTF("%d\n", g_CommandRecvCount);
 }
 
-static void cmdC2(const char *s)
+static void cmdUpdate(const char *s)
 {
-	uint8_t i;
-	
-	// 型: [ 'C', '2', (0, 0), (0, 1), ..., (3, 7) ]
-	// 例: C2000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F202122232425262728292A2B2C2D2E2F303132333435363738393A3B3C3D3E3F\n
-	for (i = 0; i < FINGER_7SEG_NUM*FINGER_NUM; i++) {
-		data_all[i] = atoh(s[i*2], s[i*2 + 1]);
-	}
-	Finger_setBrightnessAll(data_all);
-	g_CommandRecvCount++;
-	DPRINTF("%d\n", g_CommandRecvCount);
-}
-
-static void cmdC3(const char *s)
-{
-	
-}
-
-static void cmdC4(const char *s)
-{
-	// 連結輝度設定コマンド
-	DPRINTF("Not Implemented.\n");
-}
-
-static void cmdC5(const char *s)
-{
-	DPRINTF("Not Implemented.\n");
+	Armor_uartLatch();
 }
 
 static void cmdHelp(const char *s)
@@ -317,6 +251,19 @@ static void cmdHelp(const char *s)
 static void cmdVersion(const char *s)
 {
 	DPRINTF("7SegArmor ver.0.1\n");
+}
+
+static void cmdSwitch(const char *s)
+{
+	uint8_t dipsw;
+	
+	// DIPSW[3:0] = [ P120 | P43 | P42 | P41 ]、負論理
+	dipsw = (((uint8_t)P12_bit.no0 << 3) |
+			 ((uint8_t)P4_bit.no3  << 2) |
+			 ((uint8_t)P4_bit.no2  << 1) |
+			 ((uint8_t)P4_bit.no1  << 0));
+	dipsw = ~dipsw & 0x0F;
+	DPRINTF("Get Mode 0x%02x\n", dipsw);
 }
 
 static void cmdSet(const char *s)
@@ -335,25 +282,10 @@ static void cmdSet(const char *s)
 	if (pnum != 2) {
 		return;
 	}
-	
-	switch (params[0]) {
-	case 0:	// 表示テスト
-		memset(data_all, params[1], sizeof(data_all));
-		Finger_setDisplayAll(data_all);
-		break;
-	case 1:	// 輝度テスト
-		memset(data_all, params[1], sizeof(data_all));
-		Finger_setBrightnessAll(data_all);
-		break;
-	default:
-		break;
-	}
 }
 
 static void cmdGet(const char *s)
 {
-	
-	
 	DPRINTF("Not Implemented.\n");
 }
 
@@ -378,8 +310,8 @@ static void cmdDebug(const char *s)
 	g_ArmorFrameSendCount = 1;
 	
 	// 33バイトのDMA送信@1MHz≒270[us]
-	DPRINTF("%d", test_data[g_ArmorFrameSendCount*33+1]);
-	R_DMAC1_StartSend((uint8_t *)&test_data[g_ArmorFrameSendCount*33], 33);
+	DPRINTF("%d", test_data[g_ArmorFrameSendCount*ARMOR_CMD_SIZE+1]);
+	R_DMAC1_StartSend((uint8_t *)&test_data[g_ArmorFrameSendCount*ARMOR_CMD_SIZE], ARMOR_CMD_SIZE);
 	
 	*/
 	
@@ -398,20 +330,6 @@ static void cmdDebug(const char *s)
 	if (pnum != 2) {
 		return;
 	}
-	
-	switch (params[0]) {
-	case 0:	// 表示テスト
-		DPRINTF("test_data[%d] send\n", params[1]*33);
-		R_DMAC1_StartSend((uint8_t *)&test_data[params[1]*33], 33);
-		break;
-	case 1:	// 更新
-		DPRINTF("update.");
-		armorFrameSendendProc();
-		break;
-	default:
-		break;
-	}
-	
 }
 
 static void cmdReboot(const char *s)
@@ -445,13 +363,16 @@ void Command_receivedHandler(void)
 	R_UART2_Receive(&g_CommandBuf[g_CommandBufIndex], 1);
 }
 
-void Command_masterSendendHandler(void)
+// DEBUG: 遺産
+// 以下のコードは、トップの7SegArmorが下流に接続されているすべての
+// 7SegArmorを自身で更新する場合に使用するものだと思われる。
+/*
+void Armor_masterSendendHandler(void)
 {
 	// 下流(中継機器)がさらに下流に送信したとき、
 	// ここのハンドラが呼び出されるわ・・・
 	// そらデータ無茶苦茶になるしLATCH出まくるわけだ・・・
 	
-	/*
 	g_ArmorFrameSendCount++;
 		
 	// フレーム送信中
@@ -465,8 +386,8 @@ void Command_masterSendendHandler(void)
 		R_TAU0_BusyWait(20);
 		
 		// 次のフレーム送信
-		DPRINTF("%d", test_data[g_ArmorFrameSendCount*33+1]);
-		R_DMAC1_StartSend((uint8_t *)&test_data[g_ArmorFrameSendCount*33], 33);
+		DPRINTF("%d", test_data[g_ArmorFrameSendCount*ARMOR_CMD_SIZE+1]);
+		R_DMAC1_StartSend((uint8_t *)&test_data[g_ArmorFrameSendCount*ARMOR_CMD_SIZE], ARMOR_CMD_SIZE);
 		
 	// 最終フレーム送信後
 	} else {
@@ -478,12 +399,10 @@ void Command_masterSendendHandler(void)
 		
 		R_TAU0_SetTimeout(300, armorFrameSendendProc);
 	}
-	*/
 }
 
-/************************************************************
- *  prvaite functions
- ************************************************************/
+// ７SegArmorフレーム送信終了処理
+// @note DMA送信処理が全部終了したのでLATCH↑↓処理を実施する。
 static void armorFrameSendendProc(void)
 {
 	// 最速だとINTC割り込みを取りこぼすので遅延が必要。
@@ -493,7 +412,11 @@ static void armorFrameSendendProc(void)
 	
 	g_IsArmorFrameSending = FALSE;
 }
+*/
 
+/************************************************************
+ *  prvaite functions
+ ************************************************************/
 static uint8_t atoh(uint8_t c_h, uint8_t c_l)
 {
 	uint8_t h, l;

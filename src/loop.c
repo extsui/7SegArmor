@@ -104,7 +104,6 @@ static void _1msCyclicProc(void)
 {
 	Command_proc();
 	Armor_proc();
-	Finger_proc();
 }
 
 static void _10msCyclicProc(void)
