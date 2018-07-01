@@ -28,8 +28,9 @@
 #define PATTERN_7SEG_8	(0xfe)
 #define PATTERN_7SEG_9	(0xf6)
 
+static uint8_t g_RecvBuf[COMMAND_BUF_SIZE];
+static uint16_t g_RecvBufIndex = 0;
 static uint8_t g_CommandBuf[COMMAND_BUF_SIZE];
-static uint16_t g_CommandBufIndex = 0;
 
 // 有効コマンド受信回数
 static uint32_t g_CommandRecvCount = 0;
@@ -148,9 +149,7 @@ static int getParam(const char *s, int params[], int num);
  *  public functions
  ************************************************************/
 void Command_init(void)
-{
-	g_CommandBufIndex = 0;
-	
+{	
 	// 上流からの電源供給時にUSB駆動表示LEDが点灯してしまう対策
 	// 
 	// [症状]
@@ -181,7 +180,9 @@ void Command_init(void)
 		R_UART2_Create();
 		R_UART2_Start();
 	}
-	R_UART2_Receive(&g_CommandBuf[g_CommandBufIndex], 1);
+
+	g_RecvBufIndex = 0;
+	R_UART2_Receive(&g_RecvBuf[g_RecvBufIndex], 1);
 }
 
 void Command_proc(void)
@@ -189,9 +190,6 @@ void Command_proc(void)
 	if (g_IsCommandReceived == TRUE) {
 		g_IsCommandReceived = FALSE;
 		Command_onReceive((char*)g_CommandBuf);
-		g_CommandBufIndex = 0;
-		memset(g_CommandBuf, 0, COMMAND_BUF_SIZE);
-		R_UART2_Receive(&g_CommandBuf[g_CommandBufIndex], 1);
 	}
 }
 
@@ -216,6 +214,24 @@ static void Command_onReceive(const char *rxBuff)
 			DPRINTF("Bad Type.\n");
 		}
 	}
+}
+
+void Command_receivedHandler(void)
+{
+	// 受信文字は自動生成コード側でバッファに格納済み
+	// [注意]
+	// 処理単純化のため、異常系(バッファオーバーフロー)対策は
+	// していないので、\nがないひたすら長い文字列は禁止。
+	if (g_RecvBuf[g_RecvBufIndex] == '\n') {
+		// 空行もコマンドとして見なすので改行も含めてコピー
+		memcpy(g_CommandBuf, g_RecvBuf, g_RecvBufIndex + 1);
+		g_IsCommandReceived = TRUE;
+		g_RecvBufIndex = 0;
+	} else {
+		g_RecvBufIndex++;
+	}
+	// 受信データを落とさないように受信は即継続する
+	R_UART2_Receive(&g_RecvBuf[g_RecvBufIndex], 1);
 }
 
 /************************************************************/
@@ -351,17 +367,6 @@ static void cmdTest(const char *s)
 }
 
 /************************************************************/
-
-void Command_receivedHandler(void)
-{
-	// 受信文字は自動生成コード側でバッファに格納済み
-	if (g_CommandBuf[g_CommandBufIndex] == '\n') {
-		g_IsCommandReceived = TRUE;
-	} else {
-		g_CommandBufIndex++;
-	}
-	R_UART2_Receive(&g_CommandBuf[g_CommandBufIndex], 1);
-}
 
 // DEBUG: 遺産
 // 以下のコードは、トップの7SegArmorが下流に接続されているすべての
