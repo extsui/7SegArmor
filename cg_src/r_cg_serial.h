@@ -373,7 +373,7 @@ Macro definitions (Register bit)
 /***********************************************************************************************************************
 Macro definitions
 ***********************************************************************************************************************/
-#define _1E00_CSI00_DIVISOR              (0x1E00U)
+#define _4E00_CSI00_DIVISOR              (0x4E00U)
 #define _1E00_CSI10_DIVISOR              (0x1E00U)
 #define _8800_UART2_RECEIVE_DIVISOR      (0x8800U)
 #define _8800_UART2_TRANSMIT_DIVISOR     (0x8800U)
