@@ -25,10 +25,11 @@
 static uint8_t g_MasterReceiveBuffer[ARMOR_CMD_SIZE];
 
 /** LATCHバッファ */
-// TODO: ARMORフレームサイズ⇒#define化
 static uint8_t g_LatchBuffer[ARMOR_CMD_SIZE];
 
 /** 下流送信バッファ */
+// ★注意★
+// DMA転送対象領域は内蔵RAMだけであり、const領域は転送できない。
 static uint8_t g_SlaveSendBuffer[ARMOR_CMD_SIZE];
 
 /** LATCHトリガ受信フラグ */
@@ -127,7 +128,8 @@ void Armor_proc(void)
 		if (g_IsUpdatableByLatch == TRUE) {
 			g_IsUpdatableByLatch = FALSE;
 		} else {
-			DPRINTF("Error: 下流受信完了前にLATCHトリガが来た\n");
+			// 下流受信完了前にLATCHトリガが来たエラー
+			DPRINTF("Error: Bad LATCH\n");
 		}
 		
 		Finger_setCommand(0, &g_LatchBuffer[9*0]);
@@ -136,7 +138,7 @@ void Armor_proc(void)
 		Finger_setCommand(3, &g_LatchBuffer[9*3]);
 		Finger_update();
 	
-		DPRINTF("Slave Update.\n");
+		// DPRINTF("Slave Update.\n");
 		
 		memset(g_MasterReceiveBuffer, 0, sizeof(g_MasterReceiveBuffer));
 		memset(g_LatchBuffer, 0, sizeof(g_LatchBuffer));

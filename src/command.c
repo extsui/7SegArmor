@@ -38,16 +38,6 @@ static uint32_t g_CommandRecvCount = 0;
 // 1コマンド受信完了フラグ
 static BOOL g_IsCommandReceived = FALSE;
 
-/** 7SegArmorフレーム送信中か否か */
-/** ※DMA送信ではなく複数回のフレーム送信全体を指す */
-static BOOL g_IsArmorFrameSending = FALSE;
-
-/** 7SegArmorフレーム送信数 */
-static uint8_t g_ArmorFrameSendNum = 0;
-
-/** 7SegArmorフレーム送信カウンタ */
-static uint8_t g_ArmorFrameSendCount = 0;
-
 /** コマンド処理関数 */
 typedef void (*cmdFnuc)(const char *s);
 
@@ -80,37 +70,6 @@ static const Command g_CommandTable[] = {
 	{ "dbg",	3,	cmdDebug,	"Debug : dbg <p1> <p2>",	},
 	{ "reb",	3,	cmdReboot,	"Reboot"					},
 	{ "test",	4,	cmdTest,	"Test"						},
-};
-
-// TODO: armor.cに移動するべき。
-static uint8_t data_all[36];	// ローカル変数にするとスタックオーバーフロー
-
-// ★注意★
-// DMA転送対象領域は内蔵RAMだけであり、const領域は転送できない。
-static uint8_t test_data[] = {
-	1,
-	PATTERN_7SEG_0, PATTERN_7SEG_1, PATTERN_7SEG_2, PATTERN_7SEG_3, PATTERN_7SEG_4, PATTERN_7SEG_5, PATTERN_7SEG_6, PATTERN_7SEG_7,
-	PATTERN_7SEG_8, PATTERN_7SEG_9, PATTERN_7SEG_0, PATTERN_7SEG_1, PATTERN_7SEG_2, PATTERN_7SEG_3, PATTERN_7SEG_4, PATTERN_7SEG_5,
-	PATTERN_7SEG_6, PATTERN_7SEG_7, PATTERN_7SEG_8, PATTERN_7SEG_9, PATTERN_7SEG_0, PATTERN_7SEG_1, PATTERN_7SEG_2, PATTERN_7SEG_3,
-	PATTERN_7SEG_4, PATTERN_7SEG_5, PATTERN_7SEG_6, PATTERN_7SEG_7, PATTERN_7SEG_8, PATTERN_7SEG_9, PATTERN_7SEG_0, PATTERN_7SEG_1,
-	
-	1,
-	PATTERN_7SEG_2, PATTERN_7SEG_3, PATTERN_7SEG_4, PATTERN_7SEG_5, PATTERN_7SEG_6, PATTERN_7SEG_7, PATTERN_7SEG_8, PATTERN_7SEG_9,
-	PATTERN_7SEG_0, PATTERN_7SEG_1, PATTERN_7SEG_2, PATTERN_7SEG_3, PATTERN_7SEG_4, PATTERN_7SEG_5, PATTERN_7SEG_6, PATTERN_7SEG_7,
-	PATTERN_7SEG_8, PATTERN_7SEG_9, PATTERN_7SEG_0, PATTERN_7SEG_1, PATTERN_7SEG_2, PATTERN_7SEG_3, PATTERN_7SEG_4, PATTERN_7SEG_5,
-	PATTERN_7SEG_6, PATTERN_7SEG_7, PATTERN_7SEG_8, PATTERN_7SEG_9, PATTERN_7SEG_0, PATTERN_7SEG_1, PATTERN_7SEG_2, PATTERN_7SEG_3,
-	
-	1,
-	PATTERN_7SEG_4, PATTERN_7SEG_5, PATTERN_7SEG_6, PATTERN_7SEG_7, PATTERN_7SEG_8, PATTERN_7SEG_9, PATTERN_7SEG_0, PATTERN_7SEG_1,
-	PATTERN_7SEG_2, PATTERN_7SEG_3, PATTERN_7SEG_4, PATTERN_7SEG_5, PATTERN_7SEG_6, PATTERN_7SEG_7, PATTERN_7SEG_8, PATTERN_7SEG_9,
-	PATTERN_7SEG_0, PATTERN_7SEG_1, PATTERN_7SEG_2, PATTERN_7SEG_3, PATTERN_7SEG_4, PATTERN_7SEG_5, PATTERN_7SEG_6, PATTERN_7SEG_7,
-	PATTERN_7SEG_8, PATTERN_7SEG_9, PATTERN_7SEG_0, PATTERN_7SEG_1, PATTERN_7SEG_2, PATTERN_7SEG_3, PATTERN_7SEG_4, PATTERN_7SEG_5,
-
-	1,
-	PATTERN_7SEG_6, PATTERN_7SEG_7, PATTERN_7SEG_8, PATTERN_7SEG_9, PATTERN_7SEG_0, PATTERN_7SEG_1, PATTERN_7SEG_2, PATTERN_7SEG_3,
-	PATTERN_7SEG_4, PATTERN_7SEG_5, PATTERN_7SEG_6, PATTERN_7SEG_7, PATTERN_7SEG_8, PATTERN_7SEG_9, PATTERN_7SEG_0, PATTERN_7SEG_1,
-	PATTERN_7SEG_2, PATTERN_7SEG_3, PATTERN_7SEG_4, PATTERN_7SEG_5, PATTERN_7SEG_6, PATTERN_7SEG_7, PATTERN_7SEG_8, PATTERN_7SEG_9,
-	PATTERN_7SEG_0, PATTERN_7SEG_1, PATTERN_7SEG_2, PATTERN_7SEG_3, PATTERN_7SEG_4, PATTERN_7SEG_5, PATTERN_7SEG_6, PATTERN_7SEG_7,
 };
 
 /************************************************************
@@ -238,6 +197,7 @@ void Command_receivedHandler(void)
 
 static void cmdInstruct(const char *s)
 {
+	static uint8_t data_all[36];	// ローカル変数にするとスタックオーバーフロー
 	uint8_t i;
 	
 	// 例: #001FFFFFFFFFFFFFFFF01FFFFFFFFFFFFFFFF01FFFFFFFFFFFFFFFF01FFFFFFFFFFFFFFFF\n
@@ -307,31 +267,6 @@ static void cmdGet(const char *s)
 
 static void cmdDebug(const char *s)
 {
-	/*
-
-	// 連結表示設定コマンド
-	// TODO:
-	// 最終的にはシリアルから設定したデータを送るようにする。
-	// 開発中は固定データを送ってデバッグする。
-
-	// <通信プロトコル>
-	// [0    ]: 固定で1 (表示コマンドID)
-	// [1..32]: 7セグ表示データ(左上から右下に向かう順に指定)
-	Finger_setDisplayAll(&test_data[1]);
-			
-	// TODO: フラグを直接操作してはいけない。関数でラッピングするべき。
-	// そもそも1フレームしか用意しないじゃなかったっけ？
-	g_IsArmorFrameSending = TRUE;
-	g_ArmorFrameSendNum = 4;
-	g_ArmorFrameSendCount = 1;
-	
-	// 33バイトのDMA送信@1MHz≒270[us]
-	DPRINTF("%d", test_data[g_ArmorFrameSendCount*ARMOR_CMD_SIZE+1]);
-	R_DMAC1_StartSend((uint8_t *)&test_data[g_ArmorFrameSendCount*ARMOR_CMD_SIZE], ARMOR_CMD_SIZE);
-	
-	*/
-	
-	
 	int i;
 	int pnum = 0;
 	int params[2];
@@ -367,57 +302,6 @@ static void cmdTest(const char *s)
 }
 
 /************************************************************/
-
-// DEBUG: 遺産
-// 以下のコードは、トップの7SegArmorが下流に接続されているすべての
-// 7SegArmorを自身で更新する場合に使用するものだと思われる。
-/*
-void Armor_masterSendendHandler(void)
-{
-	// 下流(中継機器)がさらに下流に送信したとき、
-	// ここのハンドラが呼び出されるわ・・・
-	// そらデータ無茶苦茶になるしLATCH出まくるわけだ・・・
-	
-	g_ArmorFrameSendCount++;
-		
-	// フレーム送信中
-	if (g_ArmorFrameSendCount <= g_ArmorFrameSendNum) {
-		// [DMA間遅延時間]
-		// 下流機器のDMA完了割り込みの処理時間分待つ。
-		// ・OK：20us
-		// ・OK：15us
-		// ・NG：10us
-		//   ⇒遅延時間は、20[us] 見ておけば問題ないと判断。
-		R_TAU0_BusyWait(20);
-		
-		// 次のフレーム送信
-		DPRINTF("%d", test_data[g_ArmorFrameSendCount*ARMOR_CMD_SIZE+1]);
-		R_DMAC1_StartSend((uint8_t *)&test_data[g_ArmorFrameSendCount*ARMOR_CMD_SIZE], ARMOR_CMD_SIZE);
-		
-	// 最終フレーム送信後
-	} else {
-		// [LATCH更新遅延時間]
-		// DMA転送1回分+αの時間を確保する必要がある。
-		// ・DMA1回理論値：33*8[bit] / 1[Mbps] = 264[us]
-		// ・DMA1回測定値：267～268[us]
-		//   ⇒遅延時間は、300[us] 見ておけば問題ないと判断。
-		
-		R_TAU0_SetTimeout(300, armorFrameSendendProc);
-	}
-}
-
-// ７SegArmorフレーム送信終了処理
-// @note DMA送信処理が全部終了したのでLATCH↑↓処理を実施する。
-static void armorFrameSendendProc(void)
-{
-	// 最速だとINTC割り込みを取りこぼすので遅延が必要。
-	P13_bit.no0 = 1;
-	PULSE_DELAY();
-	P13_bit.no0 = 0;
-	
-	g_IsArmorFrameSending = FALSE;
-}
-*/
 
 /************************************************************
  *  prvaite functions

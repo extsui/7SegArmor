@@ -597,7 +597,7 @@
       <COptionIgnoreFilesMisra-DefaultValue />
       <COptionCheckLanguageExtension-DefaultValue>False</COptionCheckLanguageExtension-DefaultValue>
       <IsLockedByUser>False</IsLockedByUser>
-      <TimeTagModified--0>-8586833372152770402</TimeTagModified--0>
+      <TimeTagModified--0>-8586692519017208840</TimeTagModified--0>
       <COptionAsmPath-0>False</COptionAsmPath-0>
       <COptionChangeMessageError-0>No</COptionChangeMessageError-0>
       <COptionCharacterSet-0>Auto</COptionCharacterSet-0>
@@ -614,7 +614,7 @@ include
       <COptionMemoryModel-0>Auto</COptionMemoryModel-0>
       <COptionMisra-0>Misra2012</COptionMisra-0>
       <COptionOenhance-0>False</COptionOenhance-0>
-      <COptionOsize-0>AdvancedDebug</COptionOsize-0>
+      <COptionOsize-0>AdvancedSize</COptionOsize-0>
       <COptionPrnPath-0>False</COptionPrnPath-0>
       <COptionStackProtector-0>None</COptionStackProtector-0>
       <COptionAnsi-0>False</COptionAnsi-0>
@@ -5103,16 +5103,16 @@ include
     &lt;/FUNC&gt;
     &lt;TAG&gt;
       &lt;GlobleUserTag&gt;
+        &lt;cg_security4 Name="cg_security4" Value="00" /&gt;
         &lt;cg_security9 Name="cg_security9" Value="00" /&gt;
         &lt;cg_security7 Name="cg_security7" Value="00" /&gt;
         &lt;cg_security5 Name="cg_security5" Value="00" /&gt;
         &lt;cg_crc_area Name="cg_crc_area" Value="00" /&gt;
-        &lt;rrm Name="rrm" Value="0FE00" /&gt;
         &lt;cg_security3 Name="cg_security3" Value="00" /&gt;
         &lt;cg_security0 Name="cg_security0" Value="00" /&gt;
         &lt;cg_security1 Name="cg_security1" Value="00" /&gt;
-        &lt;cg_ocd_ram_size Name="cg_ocd_ram_size" Value="512" /&gt;
         &lt;clock_option Name="clock_option" Value="E8" /&gt;
+        &lt;lvi_option Name="lvi_option" Value="33" /&gt;
         &lt;pior_value Name="pior_value" Value="00" /&gt;
         &lt;cg_option Name="cg_option" Value="84" /&gt;
         &lt;cg_security8 Name="cg_security8" Value="00" /&gt;
@@ -5121,9 +5121,9 @@ include
         &lt;cg_onchip Name="cg_onchip" Value="" /&gt;
         &lt;cg_security2 Name="cg_security2" Value="00" /&gt;
         &lt;cg_iawctl_value Name="cg_iawctl_value" Value="80" /&gt;
-        &lt;lvi_option Name="lvi_option" Value="33" /&gt;
+        &lt;cg_ocd_ram_size Name="cg_ocd_ram_size" Value="512" /&gt;
         &lt;wdt_option Name="wdt_option" Value="FD" /&gt;
-        &lt;cg_security4 Name="cg_security4" Value="00" /&gt;
+        &lt;rrm Name="rrm" Value="0FE00" /&gt;
       &lt;/GlobleUserTag&gt;
     &lt;/TAG&gt;
   &lt;/DIR&gt;
