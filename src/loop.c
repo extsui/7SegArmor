@@ -57,6 +57,11 @@ void Loop_init(void)
 void Loop_main(void)
 {
 	while (1U) {
+		// コマンド応答処理は最速で最優先でなので、
+		// 1ms周期処理といった離散化は行わず即処理する。
+		Command_proc();
+		Armor_proc();
+		
 		// 1ms周期処理
 		if (g_Is1msElapsed == TRUE) {
 			g_Is1msElapsed = FALSE;
@@ -102,8 +107,7 @@ void Loop_1msCyclicHandler(void)
  ************************************************************/
 static void _1msCyclicProc(void)
 {
-	Command_proc();
-	Armor_proc();
+	/* NOP */
 }
 
 static void _10msCyclicProc(void)
